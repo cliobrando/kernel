@@ -190,7 +190,7 @@ static int cistpl_funce_func(struct mmc_card *card, struct sdio_func *func,
 		pr_warn("%s: card has broken SDIO 1.1 CIS, forcing SDIO 1.0\n",
 			mmc_hostname(card->host));
 		vsn = SDIO_SDIO_REV_1_00;
-	} else if (size < min_size) {
+	} else if (size < min_size && !(card->host->caps2 & MMC_CAP2_WIFI_RK912)) {
 		return -EINVAL;
 	}
 
@@ -198,7 +198,7 @@ static int cistpl_funce_func(struct mmc_card *card, struct sdio_func *func,
 	func->max_blksize = buf[12] | (buf[13] << 8);
 
 	/* TPLFE_ENABLE_TIMEOUT_VAL, present in ver 1.1 and above */
-	if (vsn > SDIO_SDIO_REV_1_00)
+	if (vsn > SDIO_SDIO_REV_1_00 && !(card->host->caps2 & MMC_CAP2_WIFI_RK912))
 		func->enable_timeout = (buf[28] | (buf[29] << 8)) * 10;
 	else
 		func->enable_timeout = jiffies_to_msecs(HZ);

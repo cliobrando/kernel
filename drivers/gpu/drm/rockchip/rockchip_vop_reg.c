@@ -1666,7 +1666,11 @@ static const struct vop_win_data px30_vop_big_win_data[] = {
 	  .type = DRM_PLANE_TYPE_OVERLAY },
 	{ .base = 0x00, .phy = &rk3366_lit_win1_data,
 	  .type = DRM_PLANE_TYPE_PRIMARY,
-	  .format_modifiers = format_modifiers_afbc,
+	  /* 5.10 parity: no AFBC modifiers advertised to userspace. The
+	   * cloned consoles' GBM stack allocates scanout buffers from the
+	   * plane modifier list, and AFBC composition on these panels
+	   * renders as horizontal banding; 5.10 did not offer AFBC here
+	   * and never showed it. Userspace keeps allocating LINEAR. */
 	  .feature = WIN_FEATURE_AFBDC },
 	{ .base = 0xe0, .phy = &px30_win23_data,
 	  .type = DRM_PLANE_TYPE_CURSOR,

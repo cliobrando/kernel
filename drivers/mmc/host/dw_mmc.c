@@ -326,6 +326,10 @@ static u32 dw_mci_prepare_command(struct mmc_host *mmc, struct mmc_command *cmd)
 			     SDMMC_CMD_PRV_DAT_WAIT, 0);
 	}
 
+	if ((mmc->caps2 & MMC_CAP2_WIFI_RK912) &&
+	    (cmd->opcode == SD_IO_RW_DIRECT))
+		cmdr |= SDMMC_CMD_PRV_DAT_WAIT;
+
 	if (cmd->flags & MMC_RSP_PRESENT) {
 		/* We expect a response, so set this bit */
 		cmdr |= SDMMC_CMD_RESP_EXP;
@@ -1310,7 +1314,8 @@ static void dw_mci_setup_bus(struct dw_mci_slot *slot, bool force_clkinit)
 
 		/* enable clock; only low power if no SDIO */
 		clk_en_a = SDMMC_CLKEN_ENABLE << slot->id;
-		if (!test_bit(DW_MMC_CARD_NO_LOW_PWR, &slot->flags))
+		if (!test_bit(DW_MMC_CARD_NO_LOW_PWR, &slot->flags) &&
+		    !(slot->mmc->caps2 & MMC_CAP2_WIFI_RK912))
 			clk_en_a |= SDMMC_CLKEN_LOW_PWR << slot->id;
 		mci_writel(host, CLKENA, clk_en_a);
 

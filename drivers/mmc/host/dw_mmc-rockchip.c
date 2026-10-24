@@ -17,6 +17,8 @@
 #include "dw_mmc-pltfm.h"
 
 #define RK3288_CLKGEN_DIV	2
+/* Card clock to retry tuning at when no sample phase works above it */
+#define RK3288_TUNING_FALLBACK_HZ	100000000
 #define USRID_INTER_PHASE	0x20230001
 #define SDMMC_TIMING_CON0	0x130
 #define SDMMC_TIMING_CON1	0x134
@@ -309,8 +311,17 @@ static int dw_mci_v2_execute_tuning(struct dw_mci_slot *slot, u32 opcode)
 			rockchip_mmc_set_phase(host, true, degree);
 		else
 			clk_set_phase(priv->sample_clk, degree);
-		if (!mmc_send_tuning(mmc, opcode, NULL))
-			break;
+		if (mmc_send_tuning(mmc, opcode, NULL)) {
+			/*
+			 * Tuning error, the phase is a bad phase,
+			 * then try using the calculated best phase.
+			 */
+			dev_info(host->dev, "V2 tuned phase to %d error, try the best phase\n", degree);
+			degree = (degree + 180) % 360;
+			clk_set_phase(priv->sample_clk, degree);
+			if (!mmc_send_tuning(mmc, opcode, NULL))
+				break;
+		}
 	}
 
 	if (i == ARRAY_SIZE(degrees)) {
@@ -319,12 +330,12 @@ static int dw_mci_v2_execute_tuning(struct dw_mci_slot *slot, u32 opcode)
 	}
 
 done:
-	dev_info(host->dev, "Successfully tuned phase to %d\n", degree);
+	dev_info(host->dev, "V2 Successfully tuned phase to %d\n", degree);
 	priv->last_degree = degree;
 	return 0;
 }
 
-static int dw_mci_rk3288_execute_tuning(struct dw_mci_slot *slot, u32 opcode)
+static int dw_mci_rk3288_tune_phases(struct dw_mci_slot *slot, u32 opcode)
 {
 	struct dw_mci *host = slot->host;
 	struct dw_mci_rockchip_priv_data *priv = host->priv;
@@ -485,6 +496,32 @@ static int dw_mci_rk3288_execute_tuning(struct dw_mci_slot *slot, u32 opcode)
 free:
 	kfree(ranges);
 	return ret;
+}
+
+/*
+ * A slot whose max-frequency is above what its board or card can sample
+ * reliably fails tuning, and the MMC core then gives up on the card. Rather
+ * than lose the card (the root filesystem on most boards), retry once at
+ * RK3288_TUNING_FALLBACK_HZ and keep the slot there: lowering f_max makes
+ * the core use that clock for re-initialization and re-tuning as well.
+ */
+static int dw_mci_rk3288_execute_tuning(struct dw_mci_slot *slot, u32 opcode)
+{
+	struct mmc_host *mmc = slot->mmc;
+	unsigned int clock = mmc->ios.clock;
+	int ret;
+
+	ret = dw_mci_rk3288_tune_phases(slot, opcode);
+	if (!ret || ret == -ENOMEM || clock <= RK3288_TUNING_FALLBACK_HZ)
+		return ret;
+
+	dev_warn(slot->host->dev, "tuning failed at %u Hz, retrying at %u Hz\n",
+		 clock, RK3288_TUNING_FALLBACK_HZ);
+	mmc->f_max = RK3288_TUNING_FALLBACK_HZ;
+	mmc->ios.clock = RK3288_TUNING_FALLBACK_HZ;
+	mmc->ops->set_ios(mmc, &mmc->ios);
+
+	return dw_mci_rk3288_tune_phases(slot, opcode);
 }
 
 static int dw_mci_rk3288_parse_dt(struct dw_mci *host)
