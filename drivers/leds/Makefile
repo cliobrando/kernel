@@ -106,6 +106,8 @@ obj-$(CONFIG_LEDS_CLASS_MULTICOLOR)	+= rgb/
 # LED Triggers
 obj-$(CONFIG_LEDS_TRIGGERS)		+= trigger/
 
+obj-$(CONFIG_LEDS_ARKOS4CLONE) += leds-arkos4clone.o
+
 # LED Blink
 obj-y					+= blink/
 

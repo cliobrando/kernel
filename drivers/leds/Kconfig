@@ -362,6 +362,12 @@ config LEDS_LP3952
 	  To compile this driver as a module, choose M here: the
 	  module will be called leds-lp3952.
 
+config LEDS_ARKOS4CLONE
+	tristate "Arkos4Clone GPIO LEDs"
+	depends on LEDS_CLASS && OF && GPIOLIB && POWER_SUPPLY
+	help
+	  Battery and charge indication using the ArkOS4Clone LED ABI.
+
 config LEDS_LP50XX
 	tristate "LED Support for TI LP5036/30/24/18/12/09 LED driver chip"
 	depends on LEDS_CLASS && REGMAP_I2C
