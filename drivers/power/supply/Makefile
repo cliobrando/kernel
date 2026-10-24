@@ -99,6 +99,7 @@ obj-$(CONFIG_CHARGER_BQ25980)	+= bq25980_charger.o
 obj-$(CONFIG_CHARGER_BQ256XX)	+= bq256xx_charger.o
 obj-$(CONFIG_BATTERY_RK816)	+= rk816_battery.o
 obj-$(CONFIG_BATTERY_RK817)	+= rk817_battery.o
+obj-$(CONFIG_BATTERY_RK817_ARKOS4CLONE)	+= rk817_battery_arkos4clone.o
 obj-$(CONFIG_CHARGER_RK817)	+= rk817_charger.o
 obj-$(CONFIG_BATTERY_RK818)	+= rk818_battery.o
 obj-$(CONFIG_CHARGER_RK818)	+= rk818_charger.o

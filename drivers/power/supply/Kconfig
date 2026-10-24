@@ -810,6 +810,18 @@ config BATTERY_RK817
 	  If you say yes here you will get support for the battery of RK817 PMIC.
 	  This driver can give support for Rk817 Battery Interface.
 
+config BATTERY_RK817_ARKOS4CLONE
+	bool "ArkOS4Clone RK817 battery gauge"
+	depends on BATTERY_RK817=y
+	help
+	  Also build the ArkOS4Clone hybrid voltage and coulomb-counting
+	  gauge. The kernel command line picks the gauge:
+	  rk817_gauge=arkos4clone uses it instead of the standard Rockchip
+	  RK817 battery gauge, which stays the default. The learned voltage
+	  calibration is exposed through the rk817_calibration sysfs
+	  attribute of the rk817-battery device; userspace saves it and
+	  writes it back after boot.
+
 config CHARGER_RK817
 	tristate "Rockchip RK817 PMIC Battery Charger"
 	depends on MFD_RK808

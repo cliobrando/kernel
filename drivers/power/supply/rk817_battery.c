@@ -29,6 +29,7 @@
 #include <linux/timer.h>
 #include <linux/wakelock.h>
 #include <linux/workqueue.h>
+#include "rk817_battery.h"
 
 static int dbg_enable;
 
@@ -3710,6 +3711,10 @@ static struct platform_driver rk817_battery_driver = {
 
 static int __init rk817_battery_init(void)
 {
+	/* rk817_gauge=arkos4clone: rk817_battery_arkos4clone.c drives it */
+	if (rk817_battery_arkos4clone_selected())
+		return 0;
+
 	return platform_driver_register(&rk817_battery_driver);
 }
 fs_initcall_sync(rk817_battery_init);
