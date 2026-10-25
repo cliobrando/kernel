@@ -716,6 +716,8 @@ static const struct rockchip_opp_data rk3588_gpu_opp_data = {
 };
 
 static const struct rockchip_opp_data rockchip_gpu_opp_data = {
+	/* rockchip_opp_set_volt() leaves vdd shareable, e.g. with the DMC on RK3326 */
+	.config_regulators = gpu_opp_config_regulators,
 	.config_clks = gpu_opp_config_clks,
 };
 
