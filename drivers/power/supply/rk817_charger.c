@@ -315,6 +315,7 @@ struct rk817_charger {
 	enum charger_t usb_charger;
 	enum charger_t dc_charger;
 	struct regulator *otg5v_rdev;
+	bool otg5v_enabled;
 	u8 ac_in;
 	u8 usb_in;
 	u8 otg_in;
@@ -513,18 +514,33 @@ static void rk817_charge_otg_disable(struct rk817_charger *charge)
 {
 	int ret;
 
+	/* Only drop the reference taken by rk817_charge_otg_enable() */
+	if (!charge->otg5v_enabled)
+		return;
+
 	ret = regulator_disable(charge->otg5v_rdev);
-	if (ret)
+	if (ret) {
 		DBG("disable otg5v failed:%d\n", ret);
+		return;
+	}
+
+	charge->otg5v_enabled = false;
 }
 
 static void rk817_charge_otg_enable(struct rk817_charger *charge)
 {
 	int ret;
 
+	if (charge->otg5v_enabled)
+		return;
+
 	ret = regulator_enable(charge->otg5v_rdev);
-	if (ret)
+	if (ret) {
 		DBG("enable otg5v failed:%d\n", ret);
+		return;
+	}
+
+	charge->otg5v_enabled = true;
 }
 
 #ifdef CONFIG_PM_SLEEP
