@@ -2436,8 +2436,14 @@ static int rockchip_opp_set_volt(struct device *dev, struct regulator *reg,
 {
 	int ret = 0;
 
+	/*
+	 * No upper bound, like rockchip_dmcfreq_set_volt(): a regulator shared
+	 * with another consumer (vdd_logic on RK3326 feeds the GPU and the DMC)
+	 * cannot satisfy two exact requests, and the regulator core still picks
+	 * the lowest voltage that meets every consumer's minimum.
+	 */
 	ret = regulator_set_voltage_triplet(reg, supply->u_volt_min,
-					    supply->u_volt, supply->u_volt_max);
+					    supply->u_volt, INT_MAX);
 	if (ret)
 		dev_err(dev, "%s: failed to set voltage (%lu %lu %lu uV): %d\n",
 			reg_name, supply->u_volt_min, supply->u_volt,
