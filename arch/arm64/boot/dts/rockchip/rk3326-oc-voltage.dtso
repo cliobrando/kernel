@@ -28,11 +28,11 @@
 			rockchip,max-volt = <1325000>;
 
 			opp-600000000 {
-				opp-microvolt = <1300000>;
-				opp-microvolt-L0 = <1300000>;
-				opp-microvolt-L1 = <1300000>;
-				opp-microvolt-L2 = <1300000>;
-				opp-microvolt-L3 = <1300000>;
+				opp-microvolt = <1300000 1300000 1400000>;
+				opp-microvolt-L0 = <1300000 1300000 1400000>;
+				opp-microvolt-L1 = <1300000 1300000 1400000>;
+				opp-microvolt-L2 = <1300000 1300000 1400000>;
+				opp-microvolt-L3 = <1300000 1300000 1400000>;
 			};
 		};
 	};
@@ -43,19 +43,19 @@
 			rockchip,max-volt = <1325000>;
 
 			opp-924000000 {
-				opp-microvolt = <1300000>;
-				opp-microvolt-L0 = <1300000>;
-				opp-microvolt-L1 = <1300000>;
-				opp-microvolt-L2 = <1300000>;
-				opp-microvolt-L3 = <1300000>;
+				opp-microvolt = <1300000 1300000 1400000>;
+				opp-microvolt-L0 = <1300000 1300000 1400000>;
+				opp-microvolt-L1 = <1300000 1300000 1400000>;
+				opp-microvolt-L2 = <1300000 1300000 1400000>;
+				opp-microvolt-L3 = <1300000 1300000 1400000>;
 			};
 
 			opp-1032000000 {
-				opp-microvolt = <1300000>;
-				opp-microvolt-L0 = <1300000>;
-				opp-microvolt-L1 = <1300000>;
-				opp-microvolt-L2 = <1300000>;
-				opp-microvolt-L3 = <1300000>;
+				opp-microvolt = <1300000 1300000 1400000>;
+				opp-microvolt-L0 = <1300000 1300000 1400000>;
+				opp-microvolt-L1 = <1300000 1300000 1400000>;
+				opp-microvolt-L2 = <1300000 1300000 1400000>;
+				opp-microvolt-L3 = <1300000 1300000 1400000>;
 			};
 		};
 	};
