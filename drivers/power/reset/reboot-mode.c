@@ -73,6 +73,15 @@ static int reboot_mode_notify(struct notifier_block *this,
 {
 	struct reboot_mode_driver *reboot;
 
+	/*
+	 * Reboot notifiers also run for power-off and halt. The boot mode
+	 * register sits in an always-on domain, so a "normal" magic written
+	 * at power-off is still there at the next power-on, and the
+	 * bootloader takes a charger plug-in for a reboot (no charge screen).
+	 */
+	if (mode != SYS_RESTART)
+		return NOTIFY_DONE;
+
 	reboot = container_of(this, struct reboot_mode_driver, reboot_notifier);
 	reboot_mode_write(reboot, cmd);
 
