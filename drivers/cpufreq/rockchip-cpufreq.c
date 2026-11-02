@@ -577,6 +577,11 @@ static int rockchip_cpufreq_cluster_init(int cpu, struct cluster_info *cluster)
 	ret = rockchip_init_opp_info(dev, opp_info, NULL, reg_name);
 	if (ret)
 		dev_err(dev, "failed to init opp info\n");
+	else
+		/* CPU binning info for EmulationStation's info menu, as in 5.10 */
+		pr_info("es_info: cpu_bin=%d process=%d scale=%d volt_sel=%d\n",
+			opp_info->bin, opp_info->process, opp_info->scale,
+			opp_info->volt_sel);
 
 	return ret;
 }
