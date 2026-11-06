@@ -91,7 +91,7 @@ static const struct snd_kcontrol_new rk817_volume_controls[] = {
 		RK817_CODEC_DDAC_VOLR, 0, 0x00, 0xff, 1, rk817_vol_tlv),
 	SOC_DOUBLE_R_RANGE_TLV("Capture Volume", RK817_CODEC_DADC_VOLL,
 		RK817_CODEC_DADC_VOLR, 0, 0x00, 0xff, 1, rk817_vol_tlv),
-	SOC_DOUBLE_TLV("Mic Capture Gain", RK817_CODEC_DMIC_PGA_GAIN, 4, 0, 0xf, 0,
+	SOC_DOUBLE_TLV("Mic Capture Volume", RK817_CODEC_DMIC_PGA_GAIN, 4, 0, 0xf, 0,
 		rk817_gain_tlv),
 };
 
