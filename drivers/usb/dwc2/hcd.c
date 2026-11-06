@@ -133,18 +133,34 @@ static void dwc2_gusbcfg_init(struct dwc2_hsotg *hsotg)
 
 static int dwc2_vbus_supply_init(struct dwc2_hsotg *hsotg)
 {
-	if (hsotg->vbus_supply)
-		return regulator_enable(hsotg->vbus_supply);
+	int ret;
 
-	return 0;
+	/*
+	 * Track the regulator state ourselves: with usb role switch based
+	 * role changes the init/exit calls do not always pair up.
+	 */
+	if (!hsotg->vbus_supply || hsotg->vbus_supply_enabled)
+		return 0;
+
+	ret = regulator_enable(hsotg->vbus_supply);
+	if (!ret)
+		hsotg->vbus_supply_enabled = true;
+
+	return ret;
 }
 
 static int dwc2_vbus_supply_exit(struct dwc2_hsotg *hsotg)
 {
-	if (hsotg->vbus_supply)
-		return regulator_disable(hsotg->vbus_supply);
+	int ret;
 
-	return 0;
+	if (!hsotg->vbus_supply || !hsotg->vbus_supply_enabled)
+		return 0;
+
+	ret = regulator_disable(hsotg->vbus_supply);
+	if (!ret)
+		hsotg->vbus_supply_enabled = false;
+
+	return ret;
 }
 
 /**
