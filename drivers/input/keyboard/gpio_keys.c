@@ -891,8 +891,8 @@ static int gpio_keys_probe(struct platform_device *pdev)
 
 	input->id.bustype = BUS_HOST;
 	input->id.vendor = 0x0001;
-	input->id.product = 0x0001;
-	input->id.version = 0x0100;
+	input->id.product = 0x7891;
+	input->id.version = 0x0500;
 
 	input->keycode = ddata->keymap;
 	input->keycodesize = sizeof(ddata->keymap[0]);
