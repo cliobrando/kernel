@@ -950,6 +950,10 @@
 #define PX30_BLANKING_VALUE			0x001f4
 #define PX30_FLAG_REG_FRM_VALID			0x001f8
 #define PX30_FLAG_REG				0x001fc
+#define PX30_AFBCD0_CTRL			0x00240
+#define PX30_AFBCD0_HDR_PTR			0x00244
+#define PX30_AFBCD0_PIC_SIZE			0x00248
+#define PX30_AFBCD0_PIC_OFFSET			0x0024c
 #define PX30_HWC_LUT_ADDR			0x00600
 #define PX30_GAMMA_LUT_ADDR			0x00a00
 /* px30 register definition end */
