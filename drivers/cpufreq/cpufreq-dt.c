@@ -22,6 +22,8 @@
 #include <linux/slab.h>
 #include <linux/thermal.h>
 
+#include <soc/rockchip/rk3326_pvtm.h>
+
 #include "cpufreq-dt.h"
 
 struct private_data {
@@ -301,6 +303,9 @@ static int dt_cpufreq_probe(struct platform_device *pdev)
 			dt_cpufreq_driver.get_intermediate = data->get_intermediate;
 		}
 	}
+
+	/* Before cpufreq owns the CPU clock and regulator */
+	rk3326_pvtm_report(get_cpu_device(0));
 
 	ret = cpufreq_register_driver(&dt_cpufreq_driver);
 	if (ret) {
