@@ -9,6 +9,7 @@
  * Copyright (C) Purism SPC 2019
  */
 
+#include <linux/backlight.h>
 #include <linux/delay.h>
 #include <linux/gpio/consumer.h>
 #include <linux/hex.h>
@@ -434,6 +435,13 @@ static int generic_panel_prepare(struct drm_panel *panel)
     if (ctx->prepared) {
         return 0;
     }
+
+    /*
+     * The backlight is still on from the bootloader's logo: without this the
+     * reset and the init sequence show on screen as corruption and grey.
+     * drm_panel_enable() turns it back on once the panel is ready.
+     */
+    backlight_disable(ctx->panel.backlight);
 
     ret = regulator_enable(ctx->vdd);
     if (ret < 0) {
