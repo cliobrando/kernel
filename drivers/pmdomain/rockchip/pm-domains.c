@@ -41,6 +41,7 @@
 #include <dt-bindings/power/rk3568-power.h>
 #include <dt-bindings/power/rockchip,rk3576-power.h>
 #include <dt-bindings/power/rk3588-power.h>
+#include <linux/rockchip/cpu.h>
 
 struct rockchip_domain_info {
 	const char *name;
@@ -634,16 +635,25 @@ static int rockchip_pd_power(struct rockchip_pm_domain *pd, bool power_on)
 {
 	struct rockchip_pmu *pmu = pd->pmu;
 	int ret;
+	/* GPU domain on PX30S: mali_kbase already fully owns SCLK_GPU's prepare/enable state */
+	bool gpu_owns_clk = soc_is_px30s() && pd->genpd.name &&
+			    !strcmp(pd->genpd.name, "gpu");
+
+	/* Powering the GPU domain off via genpd on PX30S is erratic, so just never power it off */
+	if (!power_on && gpu_owns_clk)
+		return 0;
 
 	guard(mutex)(&pmu->mutex);
 
 	if (rockchip_pmu_domain_is_on(pd) == power_on)
 		return 0;
 
-	ret = clk_bulk_enable(pd->num_clks, pd->clks);
-	if (ret < 0) {
-		dev_err(pmu->dev, "failed to enable clocks\n");
-		return ret;
+	if (!gpu_owns_clk) {
+		ret = clk_bulk_enable(pd->num_clks, pd->clks);
+		if (ret < 0) {
+			dev_err(pmu->dev, "failed to enable clocks\n");
+			return ret;
+		}
 	}
 
 	rockchip_pmu_ungate_clk(pd, true);
@@ -672,7 +682,8 @@ static int rockchip_pd_power(struct rockchip_pm_domain *pd, bool power_on)
 
 out:
 	rockchip_pmu_ungate_clk(pd, false);
-	clk_bulk_disable(pd->num_clks, pd->clks);
+	if (!gpu_owns_clk)
+		clk_bulk_disable(pd->num_clks, pd->clks);
 
 	return ret;
 }
@@ -892,7 +903,11 @@ static int rockchip_pm_add_one_domain(struct rockchip_pmu *pmu,
 	pd->genpd.power_on = rockchip_pd_power_on;
 	pd->genpd.attach_dev = rockchip_pd_attach_dev;
 	pd->genpd.detach_dev = rockchip_pd_detach_dev;
-	pd->genpd.flags = GENPD_FLAG_PM_CLK | GENPD_FLAG_NO_STAY_ON;
+	/* Skip GENPD_FLAG_PM_CLK so mali_kbase remains the sole manager of its own clock */
+	if (soc_is_px30s() && pd->genpd.name && !strcmp(pd->genpd.name, "gpu"))
+		pd->genpd.flags = GENPD_FLAG_NO_STAY_ON;
+	else
+		pd->genpd.flags = GENPD_FLAG_PM_CLK | GENPD_FLAG_NO_STAY_ON;
 	if (pd_info->active_wakeup)
 		pd->genpd.flags |= GENPD_FLAG_ACTIVE_WAKEUP;
 	pm_genpd_init(&pd->genpd, NULL,
