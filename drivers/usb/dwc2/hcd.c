@@ -3215,9 +3215,12 @@ static void dwc2_conn_id_status_change(struct work_struct *work)
 		spin_lock_irqsave(&hsotg->lock, flags);
 		dwc2_hsotg_core_init_disconnected(hsotg, false);
 		spin_unlock_irqrestore(&hsotg->lock, flags);
-		/* Enable ACG feature in device mode,if supported */
-		dwc2_enable_acg(hsotg);
-		dwc2_hsotg_core_connect(hsotg);
+		/* Connect only once a gadget driver asked for it, as on VBUS */
+		if (hsotg->enabled) {
+			/* Enable ACG feature in device mode,if supported */
+			dwc2_enable_acg(hsotg);
+			dwc2_hsotg_core_connect(hsotg);
+		}
 	} else {
 host:
 		/* A-Device connector (Host Mode) */
