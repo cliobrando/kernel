@@ -163,6 +163,11 @@ static int dwc2_vbus_supply_exit(struct dwc2_hsotg *hsotg)
 	return ret;
 }
 
+void dwc2_hcd_vbus_supply_exit(struct dwc2_hsotg *hsotg)
+{
+	dwc2_vbus_supply_exit(hsotg);
+}
+
 /**
  * dwc2_enable_host_interrupts() - Enables the Host mode interrupts
  *
