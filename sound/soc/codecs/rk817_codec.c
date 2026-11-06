@@ -87,7 +87,7 @@ static const DECLARE_TLV_DB_MINMAX(rk817_vol_tlv, -9500, 0);
 static const DECLARE_TLV_DB_MINMAX(rk817_gain_tlv, -1800, 2700);
 
 static const struct snd_kcontrol_new rk817_volume_controls[] = {
-	SOC_DOUBLE_R_RANGE_TLV("Playback Volume", RK817_CODEC_DDAC_VOLL,
+	SOC_DOUBLE_R_RANGE_TLV("Playback Playback Volume", RK817_CODEC_DDAC_VOLL,
 		RK817_CODEC_DDAC_VOLR, 0, 0x00, 0xff, 1, rk817_vol_tlv),
 	SOC_DOUBLE_R_RANGE_TLV("Capture Volume", RK817_CODEC_DADC_VOLL,
 		RK817_CODEC_DADC_VOLR, 0, 0x00, 0xff, 1, rk817_vol_tlv),
@@ -99,6 +99,10 @@ static const struct snd_kcontrol_new rk817_volume_controls[] = {
  * exclusive with a mux.
  *
  * "Playback" and "Playback Path" are the names dArkOS uses on the BSP codec:
+ * "Playback Playback Volume" is the simple control "Playback", playback only:
+ * a plain "Playback Volume" also counts as capture, and amixer then applies each
+ * relative step twice.
+ *
  * ogage changes the volume through the first and sets SPK or HP on the second
  * at every headphone event. The speaker is the default, as no event arrives
  * when nothing is plugged in at boot.
