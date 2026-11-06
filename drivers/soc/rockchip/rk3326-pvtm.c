@@ -116,7 +116,7 @@ void rk3326_pvtm_report(struct device *cpu_dev)
 {
 	struct thermal_zone_device *tz;
 	struct regulator *reg;
-	struct device_node *np;
+	struct device_node *np, *parent;
 	unsigned long old_rate;
 	struct regmap *grf;
 	struct clk *clk, *pclk;
@@ -132,7 +132,9 @@ void rk3326_pvtm_report(struct device *cpu_dev)
 		return;
 	}
 
-	grf = syscon_regmap_lookup_by_compatible("rockchip,px30-grf");
+	parent = of_get_parent(np);
+	grf = syscon_node_to_regmap(parent);
+	of_node_put(parent);
 	pclk = of_clk_get(np, 0);
 	of_node_put(np);
 	if (IS_ERR(grf) || IS_ERR(pclk))
