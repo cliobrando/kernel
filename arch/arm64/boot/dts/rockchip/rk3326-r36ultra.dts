@@ -326,6 +326,12 @@
 
 /* RGA2 for librga; mainline px30.dtsi has no node for it */
 &{/} {
+	/* "core" PVTM in the GRF, for the CPU grade ES shows */
+	pvtm {
+		compatible = "rockchip,px30-pvtm";
+		clocks = <&cru SCLK_PVTM>;
+	};
+
 	rk_rga: rk_rga@ff480000 {
 		compatible = "rockchip,rga2";
 		reg = <0x0 0xff480000 0x0 0x1000>;
