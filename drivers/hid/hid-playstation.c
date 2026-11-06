@@ -111,6 +111,11 @@ struct ps_led_info {
 #define DS_BUTTONS2_PS_HOME	BIT(0)
 #define DS_BUTTONS2_TOUCHPAD	BIT(1)
 #define DS_BUTTONS2_MIC_MUTE	BIT(2)
+/* DualSense Edge only (bits 4-7 of buttons[2]) */
+#define DS_BUTTONS2_EDGE_LEFT_FN	BIT(4)
+#define DS_BUTTONS2_EDGE_RIGHT_FN	BIT(5)
+#define DS_BUTTONS2_EDGE_LEFT_PADDLE	BIT(6)
+#define DS_BUTTONS2_EDGE_RIGHT_PADDLE	BIT(7)
 
 /* Status fields of DualSense input report. */
 #define DS_STATUS0_BATTERY_CAPACITY		GENMASK(3, 0)
@@ -770,6 +775,19 @@ ps_gamepad_create(struct hid_device *hdev,
 
 	for (i = 0; i < ARRAY_SIZE(ps_gamepad_buttons); i++)
 		input_set_capability(gamepad, EV_KEY, ps_gamepad_buttons[i]);
+
+	/*
+	 * DualSense Edge: the two function buttons and the two removable back
+	 * paddles are extra physical buttons with no DualShock equivalent.
+	 * Expose them as dedicated buttons (same approach as xpad's Xbox Elite
+	 * paddles, BTN_TRIGGER_HAPPY5-8) so userspace sees real paddles.
+	 */
+	if (hdev->product == USB_DEVICE_ID_SONY_PS5_CONTROLLER_2) {
+		input_set_capability(gamepad, EV_KEY, BTN_TRIGGER_HAPPY1);
+		input_set_capability(gamepad, EV_KEY, BTN_TRIGGER_HAPPY2);
+		input_set_capability(gamepad, EV_KEY, BTN_TRIGGER_HAPPY3);
+		input_set_capability(gamepad, EV_KEY, BTN_TRIGGER_HAPPY4);
+	}
 
 #if IS_ENABLED(CONFIG_PLAYSTATION_FF)
 	if (play_effect) {
@@ -1486,6 +1504,18 @@ static int dualsense_parse_report(struct ps_device *ps_dev, struct hid_report *r
 	input_report_key(ds->gamepad, BTN_THUMBL, ds_report->buttons[1] & DS_BUTTONS1_L3);
 	input_report_key(ds->gamepad, BTN_THUMBR, ds_report->buttons[1] & DS_BUTTONS1_R3);
 	input_report_key(ds->gamepad, BTN_MODE,   ds_report->buttons[2] & DS_BUTTONS2_PS_HOME);
+
+	/* DualSense Edge: function buttons + removable back paddles */
+	if (hdev->product == USB_DEVICE_ID_SONY_PS5_CONTROLLER_2) {
+		input_report_key(ds->gamepad, BTN_TRIGGER_HAPPY1,
+				 ds_report->buttons[2] & DS_BUTTONS2_EDGE_LEFT_FN);
+		input_report_key(ds->gamepad, BTN_TRIGGER_HAPPY2,
+				 ds_report->buttons[2] & DS_BUTTONS2_EDGE_RIGHT_FN);
+		input_report_key(ds->gamepad, BTN_TRIGGER_HAPPY3,
+				 ds_report->buttons[2] & DS_BUTTONS2_EDGE_LEFT_PADDLE);
+		input_report_key(ds->gamepad, BTN_TRIGGER_HAPPY4,
+				 ds_report->buttons[2] & DS_BUTTONS2_EDGE_RIGHT_PADDLE);
+	}
 	input_sync(ds->gamepad);
 
 	/*
