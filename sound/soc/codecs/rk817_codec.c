@@ -87,27 +87,36 @@ static const DECLARE_TLV_DB_MINMAX(rk817_vol_tlv, -9500, 0);
 static const DECLARE_TLV_DB_MINMAX(rk817_gain_tlv, -1800, 2700);
 
 static const struct snd_kcontrol_new rk817_volume_controls[] = {
-	SOC_DOUBLE_R_RANGE_TLV("Master Playback Volume", RK817_CODEC_DDAC_VOLL,
+	SOC_DOUBLE_R_RANGE_TLV("Playback Playback Volume", RK817_CODEC_DDAC_VOLL,
 		RK817_CODEC_DDAC_VOLR, 0, 0x00, 0xff, 1, rk817_vol_tlv),
-	SOC_DOUBLE_R_RANGE_TLV("Master Capture Volume", RK817_CODEC_DADC_VOLL,
+	SOC_DOUBLE_R_RANGE_TLV("Capture Volume", RK817_CODEC_DADC_VOLL,
 		RK817_CODEC_DADC_VOLR, 0, 0x00, 0xff, 1, rk817_vol_tlv),
-	SOC_DOUBLE_TLV("Mic Capture Gain", RK817_CODEC_DMIC_PGA_GAIN, 4, 0, 0xf, 0,
+	SOC_DOUBLE_TLV("Mic Capture Volume", RK817_CODEC_DMIC_PGA_GAIN, 4, 0, 0xf, 0,
 		rk817_gain_tlv),
 };
 
 /* Since the speaker output and L headphone pin are internally the same, make audio path mutually
  * exclusive with a mux.
+ *
+ * "Playback" and "Playback Path" are the names dArkOS uses on the BSP codec:
+ * "Playback Playback Volume" is the simple control "Playback", playback only:
+ * a plain "Playback Volume" also counts as capture, and amixer then applies each
+ * relative step twice.
+ *
+ * ogage changes the volume through the first and sets SPK or HP on the second
+ * at every headphone event. The speaker is the default, as no event arrives
+ * when nothing is plugged in at boot.
  */
 
 static const char *dac_mux_text[] = {
-	"HP",
 	"SPK",
+	"HP",
 };
 
 static SOC_ENUM_SINGLE_VIRT_DECL(dac_enum, dac_mux_text);
 
 static const struct snd_kcontrol_new dac_mux =
-	SOC_DAPM_ENUM("Playback Mux", dac_enum);
+	SOC_DAPM_ENUM("Playback Path", dac_enum);
 
 static const struct snd_soc_dapm_widget rk817_dapm_widgets[] = {
 
@@ -169,7 +178,7 @@ static const struct snd_soc_dapm_widget rk817_dapm_widgets[] = {
 	SND_SOC_DAPM_DAC("DAC R", "Playback", RK817_CODEC_ADAC_CFG1, 0, 1),
 
 	/* Mux for input/output path selection */
-	SND_SOC_DAPM_MUX("Playback Mux", SND_SOC_NOPM, 1, 0, &dac_mux),
+	SND_SOC_DAPM_MUX("Playback Path", SND_SOC_NOPM, 1, 0, &dac_mux),
 
 	/* Pins for Simple Card Bindings */
 	SND_SOC_DAPM_INPUT("MICL"),
@@ -277,12 +286,12 @@ static const struct snd_soc_dapm_route rk817_dapm_routes[] = {
 	{"DAC R", NULL, "Headphone Pre Amp"},
 
 	/* mux path for output selection */
-	{"Playback Mux", "HP", "DAC L"},
-	{"Playback Mux", "HP", "DAC R"},
-	{"Playback Mux", "SPK", "SPK DAC"},
-	{"SPKO", NULL, "Playback Mux"},
-	{"HPOL", NULL, "Playback Mux"},
-	{"HPOR", NULL, "Playback Mux"},
+	{"Playback Path", "HP", "DAC L"},
+	{"Playback Path", "HP", "DAC R"},
+	{"Playback Path", "SPK", "SPK DAC"},
+	{"SPKO", NULL, "Playback Path"},
+	{"HPOL", NULL, "Playback Path"},
+	{"HPOR", NULL, "Playback Path"},
 };
 
 static int rk817_set_dai_sysclk(struct snd_soc_dai *codec_dai,
