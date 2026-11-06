@@ -473,7 +473,7 @@ int mpp_iommu_attach(struct mpp_iommu_info *info)
 	return iommu_attach_group(info->domain, info->group);
 }
 
-static int mpp_iommu_handle(struct iommu_domain *iommu,
+static int __maybe_unused mpp_iommu_handle(struct iommu_domain *iommu,
 			    struct device *iommu_dev,
 			    unsigned long iova,
 			    int status, void *arg)
@@ -653,9 +653,11 @@ int mpp_iommu_dev_activate(struct mpp_iommu_info *info, struct mpp_dev *dev)
 		ret = -EINVAL;
 	} else {
 		info->dev_active = dev;
-		/* switch domain pagefault handler and arg depending on device */
-		iommu_set_fault_handler(info->domain, dev->fault_handler ?
-					dev->fault_handler : mpp_iommu_handle, dev);
+		/*
+		 * No iommu_set_fault_handler() here: it warns and does nothing
+		 * on a DMA API domain, which is what mainline gives this device.
+		 * Page faults are logged by the IOMMU driver and the job times out.
+		 */
 
 		dev_dbg(info->dev, "activate -> %p %s\n", dev, dev_name(dev->dev));
 	}
