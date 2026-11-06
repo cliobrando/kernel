@@ -93,7 +93,11 @@ int rga_dma_map_sgt(struct sg_table *sgt, struct rga_dma_buffer *buffer,
 	if (ret <= 0) {
 		rga_err("dma_map_sg failed! ret = %d\n", ret);
 		return ret < 0 ? ret : -EINVAL;
-	} else if (ret > 1) {
+	} else if (ret > 1 && device_iommu_mapped(map_dev)) {
+		/*
+		 * Only an IOMMU has to give one contiguous range. The RGA2's
+		 * own MMU (RK3326) builds its page table from the scatterlist.
+		 */
 		rga_err("dma_map_sg mapped more than one segment! orig_nents = %d, nents = %d\n",
 			sgt->orig_nents, ret);
 		dma_unmap_sg(map_dev, sgt->sgl, sgt->orig_nents, dir);
