@@ -25,7 +25,12 @@
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(7, 3, 0))
 #include <drm/drm_of.h>
 #endif
+#include <drm/drm_atomic.h>
+#include <drm/drm_atomic_uapi.h>
+#include <drm/drm_client.h>
+#include <drm/drm_fb_helper.h>
 #include <drm/drm_mipi_dsi.h>
+#include <drm/drm_modeset_lock.h>
 #include <drm/drm_modes.h>
 #include <drm/drm_panel.h>
 
@@ -69,6 +74,8 @@ struct generic_panel_init_seq {
 struct generic_panel {
     struct device *dev;
     struct drm_panel panel;
+    struct drm_connector *connector;
+    int cur_timing;
     struct gpio_desc *enable_gpio;
     struct gpio_desc *reset_gpio;
     struct regulator *vdd;
@@ -486,6 +493,33 @@ disable_vdd:
 static const struct drm_display_mode mode_template = { };
 
 
+static void generic_panel_fill_mode(struct generic_panel *ctx,
+                    const struct generic_panel_mode *genmode,
+                    struct drm_display_mode *mode)
+{
+    *mode = mode_template;
+
+    mode->clock          = genmode->clock;
+
+    mode->hdisplay       = genmode->horizontal[1];
+    mode->hsync_start    = mode->hdisplay + genmode->horizontal[2];
+    mode->hsync_end      = mode->hsync_start + genmode->horizontal[3];
+    mode->htotal         = mode->hsync_end + genmode->horizontal[4];
+
+    mode->vdisplay       = genmode->vertical[1];
+    mode->vsync_start    = mode->vdisplay + genmode->vertical[2];
+    mode->vsync_end      = mode->vsync_start + genmode->vertical[3];
+    mode->vtotal         = mode->vsync_end + genmode->vertical[4];
+
+    mode->width_mm       = ctx->size.width;
+    mode->height_mm      = ctx->size.height;
+
+    // All tested panels (R36s orig, new-3, new-4; rgb10s) either require no sync or work OK with it.
+    // So for now just always set no sync drm flags
+    // TODO: pass drm flags in mode line if some future panel requires that
+    mode->flags          = DRM_MODE_FLAG_NHSYNC | DRM_MODE_FLAG_NVSYNC;
+}
+
 static int generic_panel_get_modes(struct drm_panel *panel,
                 struct drm_connector *connector)
 {
@@ -494,35 +528,16 @@ static int generic_panel_get_modes(struct drm_panel *panel,
     struct drm_display_mode *mode;
     struct generic_panel_mode *genmode = ctx->modes;
 
+    ctx->connector = connector;
+
     while (genmode) {
         dev_dbg(ctx->dev, "gen mode %d %dx%d\n", genmode->clock, genmode->horizontal[1], genmode->vertical[1]);
 
-        mode_tmp = mode_template;
-
-        mode_tmp.clock          = genmode->clock;
-
-        mode_tmp.hdisplay       = genmode->horizontal[1];
-        mode_tmp.hsync_start    = mode_tmp.hdisplay + genmode->horizontal[2];
-        mode_tmp.hsync_end      = mode_tmp.hsync_start + genmode->horizontal[3];
-        mode_tmp.htotal         = mode_tmp.hsync_end + genmode->horizontal[4];
-
-        mode_tmp.vdisplay       = genmode->vertical[1];
-        mode_tmp.vsync_start    = mode_tmp.vdisplay + genmode->vertical[2];
-        mode_tmp.vsync_end      = mode_tmp.vsync_start + genmode->vertical[3];
-        mode_tmp.vtotal         = mode_tmp.vsync_end + genmode->vertical[4];
-
-        mode_tmp.width_mm       = ctx->size.width;
-        mode_tmp.height_mm      = ctx->size.height;
-
-        // All tested panels (R36s orig, new-3, new-4; rgb10s) either require no sync or work OK with it.
-        // So for now just always set no sync drm flags
-        // TODO: pass drm flags in mode line if some future panel requires that
-        mode_tmp.flags          = DRM_MODE_FLAG_NHSYNC | DRM_MODE_FLAG_NVSYNC;
+        generic_panel_fill_mode(ctx, genmode, &mode_tmp);
 
         mode = drm_mode_duplicate(connector->dev, &mode_tmp);
         if (!mode) {
-            dev_err(ctx->dev, "Failed to add mode %u\n",
-                drm_mode_vrefresh(mode));
+            dev_err(ctx->dev, "Failed to add mode\n");
             return -ENOMEM;
         }
         drm_mode_set_name(mode);
@@ -547,6 +562,214 @@ static int generic_panel_get_modes(struct drm_panel *panel,
 
     return 1;
 }
+
+/*
+ * ArkOS timing switcher: "timings" lists the modes and "timing" reads or
+ * sets the active index, as panel-simple did on the BSP kernels. ES's
+ * refresh rate menu uses these files. Indexes follow panel_description.
+ */
+#define GENERIC_MATCH (DRM_MODE_MATCH_TIMINGS | DRM_MODE_MATCH_CLOCK | DRM_MODE_MATCH_FLAGS)
+
+static int generic_panel_num_modes(struct generic_panel *ctx)
+{
+    struct generic_panel_mode *m;
+    int n = 0;
+
+    for (m = ctx->modes; m; m = m->prev)
+        n++;
+    return n;
+}
+
+/* ctx->modes is the last line of panel_description, ->prev walks back */
+static const struct generic_panel_mode *generic_panel_mode_at(struct generic_panel *ctx, int index)
+{
+    struct generic_panel_mode *m = ctx->modes;
+    int i;
+
+    for (i = generic_panel_num_modes(ctx) - 1; m && i > index; i--)
+        m = m->prev;
+    return m;
+}
+
+static int generic_panel_current_timing(struct generic_panel *ctx)
+{
+    struct drm_connector *connector = ctx->connector;
+    struct drm_crtc *crtc = connector && connector->state ? connector->state->crtc : NULL;
+    struct drm_display_mode mode;
+    int i, n = generic_panel_num_modes(ctx);
+
+    if (crtc && crtc->state && crtc->state->enable) {
+        for (i = 0; i < n; i++) {
+            generic_panel_fill_mode(ctx, generic_panel_mode_at(ctx, i), &mode);
+            if (drm_mode_match(&crtc->state->mode, &mode, GENERIC_MATCH))
+                return i;
+        }
+    }
+    return ctx->cur_timing;
+}
+
+static int generic_panel_commit_mode(struct drm_connector *connector,
+                    const struct drm_display_mode *mode)
+{
+    struct drm_device *drm = connector->dev;
+    struct drm_modeset_acquire_ctx actx;
+    struct drm_connector_state *conn_state;
+    struct drm_crtc_state *crtc_state;
+    struct drm_atomic_state *state;
+    int ret;
+
+    state = drm_atomic_state_alloc(drm);
+    if (!state)
+        return -ENOMEM;
+
+    drm_modeset_acquire_init(&actx, 0);
+    state->acquire_ctx = &actx;
+retry:
+    conn_state = drm_atomic_get_connector_state(state, connector);
+    if (IS_ERR(conn_state)) {
+        ret = PTR_ERR(conn_state);
+        goto out;
+    }
+    if (!conn_state->crtc) {
+        ret = -ENODEV;
+        goto out;
+    }
+
+    crtc_state = drm_atomic_get_crtc_state(state, conn_state->crtc);
+    if (IS_ERR(crtc_state)) {
+        ret = PTR_ERR(crtc_state);
+        goto out;
+    }
+    if (!crtc_state->enable) {
+        ret = -ENODEV;
+        goto out;
+    }
+
+    ret = drm_atomic_set_mode_for_crtc(crtc_state, mode);
+    if (!ret)
+        ret = drm_atomic_commit(state);
+out:
+    if (ret == -EDEADLK) {
+        drm_atomic_state_clear(state);
+        drm_modeset_backoff(&actx);
+        goto retry;
+    }
+    drm_atomic_state_put(state);
+    drm_modeset_drop_locks(&actx);
+    drm_modeset_acquire_fini(&actx);
+
+    return ret;
+}
+
+/* Later KMS clients pick the preferred mode, so it follows the switch */
+static void generic_panel_set_preferred(struct drm_connector *connector,
+                    const struct drm_display_mode *mode)
+{
+    struct drm_display_mode *m;
+
+    mutex_lock(&connector->dev->mode_config.mutex);
+    list_for_each_entry(m, &connector->modes, head) {
+        if (drm_mode_match(m, mode, GENERIC_MATCH))
+            m->type |= DRM_MODE_TYPE_PREFERRED;
+        else
+            m->type &= ~DRM_MODE_TYPE_PREFERRED;
+    }
+    mutex_unlock(&connector->dev->mode_config.mutex);
+}
+
+/* fbdev restores the mode it chose at boot when it takes the display back */
+static void generic_panel_update_fbdev_mode(struct drm_connector *connector,
+                    const struct drm_display_mode *mode)
+{
+    struct drm_fb_helper *fb_helper = connector->dev->fb_helper;
+    struct drm_mode_set *modeset;
+    struct drm_display_mode *dup;
+    unsigned int i;
+
+    if (!fb_helper)
+        return;
+
+    mutex_lock(&fb_helper->client.modeset_mutex);
+    drm_client_for_each_modeset(modeset, &fb_helper->client) {
+        for (i = 0; i < modeset->num_connectors; i++) {
+            if (modeset->connectors[i] != connector || !modeset->mode)
+                continue;
+            dup = drm_mode_duplicate(connector->dev, mode);
+            if (!dup)
+                break;
+            drm_mode_destroy(connector->dev, modeset->mode);
+            modeset->mode = dup;
+            break;
+        }
+    }
+    mutex_unlock(&fb_helper->client.modeset_mutex);
+}
+
+static ssize_t timings_show(struct device *dev, struct device_attribute *attr, char *buf)
+{
+    struct generic_panel *ctx = dev_get_drvdata(dev);
+    int i, n = generic_panel_num_modes(ctx), cur = generic_panel_current_timing(ctx);
+    struct drm_display_mode mode;
+    ssize_t len;
+
+    len = sysfs_emit(buf, "count: %d\n", n);
+    for (i = 0; i < n; i++) {
+        generic_panel_fill_mode(ctx, generic_panel_mode_at(ctx, i), &mode);
+        len += sysfs_emit_at(buf, len, "%d: %dx%d@%dHz%s\n", i, mode.hdisplay,
+                     mode.vdisplay, drm_mode_vrefresh(&mode),
+                     i == cur ? " (current)" : "");
+    }
+    return len;
+}
+
+static ssize_t timing_show(struct device *dev, struct device_attribute *attr, char *buf)
+{
+    return sysfs_emit(buf, "%d\n", generic_panel_current_timing(dev_get_drvdata(dev)));
+}
+
+static ssize_t timing_store(struct device *dev, struct device_attribute *attr,
+                const char *buf, size_t count)
+{
+    struct generic_panel *ctx = dev_get_drvdata(dev);
+    struct drm_connector *connector = ctx->connector;
+    struct drm_display_mode mode;
+    unsigned int index;
+    int ret;
+
+    ret = kstrtouint(buf, 0, &index);
+    if (ret)
+        return ret;
+    if (index >= generic_panel_num_modes(ctx))
+        return -ERANGE;
+    if (!connector)
+        return -ENODEV;
+
+    generic_panel_fill_mode(ctx, generic_panel_mode_at(ctx, index), &mode);
+    drm_mode_set_name(&mode);
+
+    ret = generic_panel_commit_mode(connector, &mode);
+    if (ret)
+        return ret;
+
+    ctx->cur_timing = index;
+    generic_panel_set_preferred(connector, &mode);
+    generic_panel_update_fbdev_mode(connector, &mode);
+
+    return count;
+}
+
+static DEVICE_ATTR_RO(timings);
+static DEVICE_ATTR_RW(timing);
+
+static struct attribute *generic_panel_timing_attrs[] = {
+    &dev_attr_timings.attr,
+    &dev_attr_timing.attr,
+    NULL,
+};
+
+static const struct attribute_group generic_panel_timing_group = {
+    .attrs = generic_panel_timing_attrs,
+};
 
 static enum drm_panel_orientation generic_panel_get_orientation(struct drm_panel *panel)
 {
@@ -659,6 +882,10 @@ static int generic_panel_probe(struct mipi_dsi_device *dsi)
         return ret;
 
     drm_panel_add(&ctx->panel);
+
+    ret = devm_device_add_group(dev, &generic_panel_timing_group);
+    if (ret)
+        dev_warn(dev, "no timing sysfs files: %d\n", ret);
 
     ret = mipi_dsi_attach(dsi);
     if (ret < 0) {
