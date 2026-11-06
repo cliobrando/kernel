@@ -345,7 +345,12 @@ static const struct vop_win_phy px30_win1_data = {
 static const struct vop_win_phy px30_win1_afbc_data = {
 	.data_formats = formats_win_lite,
 	.nformats = ARRAY_SIZE(formats_win_lite),
-	.format_modifiers = format_modifiers_afbc,
+	/*
+	 * No AFBC modifiers advertised to userspace, as on the BSP kernels.
+	 * dArkOS's GBM stack allocates scanout buffers from the plane's
+	 * modifier list, and AFBC composition renders as horizontal banding
+	 * on the R36 Ultra panel. Userspace keeps allocating LINEAR.
+	 */
 	.enable = VOP_REG(PX30_WIN1_CTRL0, 0x1, 0),
 	.format = VOP_REG(PX30_WIN1_CTRL0, 0x7, 4),
 	.rb_swap = VOP_REG(PX30_WIN1_CTRL0, 0x1, 12),
