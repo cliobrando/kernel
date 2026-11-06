@@ -327,10 +327,15 @@
 
 /* RGA2 for librga; mainline px30.dtsi has no node for it */
 &{/} {
-	/* "core" PVTM in the GRF, for the CPU grade ES shows */
-	pvtm {
-		compatible = "rockchip,px30-pvtm";
-		clocks = <&cru SCLK_PVTM>;
+	/* Not in mainline's px30.dtsi: holds the PVTM behind the CPU grade ES shows */
+	core_grf: syscon@ff148000 {
+		compatible = "syscon", "simple-mfd";
+		reg = <0x0 0xff148000 0x0 0x1000>;
+
+		pvtm {
+			compatible = "rockchip,px30-pvtm";
+			clocks = <&cru SCLK_PVTM>;
+		};
 	};
 
 	/* The BSP's MPP nodes: ES decodes videos through /dev/mpp_service */
