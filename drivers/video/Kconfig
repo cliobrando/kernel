@@ -46,6 +46,8 @@ source "drivers/gpu/drm/Kconfig"
 
 menu "Frame buffer Devices"
 source "drivers/video/rockchip/rga3/Kconfig"
+source "drivers/video/rockchip/mpp/Kconfig"
+source "drivers/video/rockchip/mpp_osal/Kconfig"
 
 source "drivers/video/fbdev/Kconfig"
 endmenu
