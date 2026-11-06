@@ -22,3 +22,5 @@ ifeq ($(CONFIG_OF),y)
 obj-$(CONFIG_VIDEOMODE_HELPERS) += of_display_timing.o of_videomode.o
 endif
 obj-$(CONFIG_ROCKCHIP_MULTI_RGA)	+= rockchip/rga3/
+obj-$(CONFIG_ROCKCHIP_MPP_SERVICE)	+= rockchip/mpp/
+obj-$(CONFIG_ROCKCHIP_MPP_OSAL)	+= rockchip/mpp_osal/

@@ -24,6 +24,7 @@
 #include <linux/platform_device.h>
 #include <linux/pm_runtime.h>
 #include <linux/slab.h>
+#include <soc/rockchip/rockchip_iommu.h>
 #include <linux/spinlock.h>
 #include <linux/string_choices.h>
 
@@ -958,6 +959,60 @@ out_disable_clocks:
 	clk_bulk_disable(iommu->num_clocks, iommu->clocks);
 	return ret;
 }
+
+/* Rockchip MPP: see <soc/rockchip/rockchip_iommu.h> */
+int rockchip_iommu_disable(struct device *dev)
+{
+	struct rk_iommu *iommu = rk_iommu_from_dev(dev);
+
+	if (!iommu)
+		return -ENODEV;
+
+	rk_iommu_disable(iommu);
+
+	return 0;
+}
+EXPORT_SYMBOL_GPL(rockchip_iommu_disable);
+
+int rockchip_iommu_enable(struct device *dev)
+{
+	struct rk_iommu *iommu = rk_iommu_from_dev(dev);
+
+	if (!iommu)
+		return -ENODEV;
+
+	return rk_iommu_enable(iommu);
+}
+EXPORT_SYMBOL_GPL(rockchip_iommu_enable);
+
+bool rockchip_iommu_is_enabled(struct device *dev)
+{
+	struct rk_iommu *iommu = rk_iommu_from_dev(dev);
+	bool enabled;
+
+	if (!iommu || clk_bulk_enable(iommu->num_clocks, iommu->clocks))
+		return false;
+
+	enabled = rk_iommu_is_paging_enabled(iommu);
+	clk_bulk_disable(iommu->num_clocks, iommu->clocks);
+
+	return enabled;
+}
+EXPORT_SYMBOL_GPL(rockchip_iommu_is_enabled);
+
+/* Called from the page fault handler, with the IOMMU clocks on */
+void rockchip_iommu_mask_irq(struct device *dev)
+{
+	struct rk_iommu *iommu = rk_iommu_from_dev(dev);
+	int i;
+
+	if (!iommu)
+		return;
+
+	for (i = 0; i < iommu->num_mmu; i++)
+		rk_iommu_write(iommu->bases[i], RK_MMU_INT_MASK, 0);
+}
+EXPORT_SYMBOL_GPL(rockchip_iommu_mask_irq);
 
 static int rk_iommu_identity_attach(struct iommu_domain *identity_domain,
 				    struct device *dev,
