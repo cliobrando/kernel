@@ -264,8 +264,12 @@
 		simple-audio-card,format = "i2s";
 		simple-audio-card,name = "rk817_int";
 		simple-audio-card,mclk-fs = <256>;
-		/* reads low with no plug, against the pull-up */
-		simple-audio-card,hp-det-gpios = <&gpio2 RK_PC6 GPIO_ACTIVE_HIGH>;
+		/*
+		 * The pin reads high with a plug in. Active low, as on the BSP:
+		 * dArkOS's ogage sets HP when the jack reports off, and SPK when
+		 * it reports on.
+		 */
+		simple-audio-card,hp-det-gpios = <&gpio2 RK_PC6 GPIO_ACTIVE_LOW>;
 		simple-audio-card,widgets =
 			"Microphone", "Mic Jack",
 			"Headphone", "Headphones",
