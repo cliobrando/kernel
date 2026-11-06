@@ -100,11 +100,6 @@ static const uint64_t format_modifiers_win_lite[] = {
 	DRM_FORMAT_MOD_INVALID,
 };
 
-static const uint64_t format_modifiers_afbc[] = {
-	ROCKCHIP_AFBC_MOD,
-	DRM_FORMAT_MOD_INVALID,
-};
-
 static const struct vop_scl_regs rk3036_win0_scl = {
 	.scale_yrgb_x = VOP_REG(RK3036_WIN0_SCL_FACTOR_YRGB, 0xffff, 0x0),
 	.scale_yrgb_y = VOP_REG(RK3036_WIN0_SCL_FACTOR_YRGB, 0xffff, 16),
@@ -346,7 +341,12 @@ static const struct vop_win_phy px30_win1_data = {
 static const struct vop_win_phy px30_win1_afbc_data = {
 	.data_formats = formats_win_lite,
 	.nformats = ARRAY_SIZE(formats_win_lite),
-	.format_modifiers = format_modifiers_afbc,
+	/*
+	 * No AFBC modifiers advertised to userspace, as on the BSP kernels.
+	 * dArkOS's GBM stack allocates scanout buffers from the plane's
+	 * modifier list, and AFBC composition renders as horizontal banding
+	 * on the R36 Ultra panel. Userspace keeps allocating LINEAR.
+	 */
 	.enable = VOP_REG(PX30_WIN1_CTRL0, 0x1, 0),
 	.format = VOP_REG(PX30_WIN1_CTRL0, 0x7, 4),
 	.rb_swap = VOP_REG(PX30_WIN1_CTRL0, 0x1, 12),
