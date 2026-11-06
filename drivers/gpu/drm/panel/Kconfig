@@ -1068,6 +1068,15 @@ config DRM_PANEL_SITRONIX_ST7701
 	  ST7701 controller for 480X864 LCD panels with MIPI/RGB/SPI
 	  system interfaces.
 
+config DRM_PANEL_GENERIC_DSI
+	tristate "Generic DSI panel described in the device tree"
+	depends on OF
+	depends on DRM_MIPI_DSI
+	depends on BACKLIGHT_CLASS_DEVICE
+	help
+	  DSI panel whose modes and init sequence come from the
+	  panel_description device tree property (ROCKNIX generic-dsi).
+
 config DRM_PANEL_SITRONIX_ST7703
 	tristate "Sitronix ST7703 based MIPI touchscreen panels"
 	depends on OF
