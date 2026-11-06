@@ -10,6 +10,7 @@
 #include <dt-bindings/gpio/gpio.h>
 #include <dt-bindings/input/input.h>
 #include <dt-bindings/pinctrl/rockchip.h>
+#include <dt-bindings/power/px30-power.h>
 #include "rk3326.dtsi"
 
 / {
@@ -308,6 +309,19 @@
 		enable-active-high;
 		regulator-always-on;
 		vin-supply = <&vccsys>;
+	};
+};
+
+/* RGA2 for librga; mainline px30.dtsi has no node for it */
+&{/} {
+	rk_rga: rk_rga@ff480000 {
+		compatible = "rockchip,rga2";
+		reg = <0x0 0xff480000 0x0 0x1000>;
+		interrupts = <GIC_SPI 76 IRQ_TYPE_LEVEL_HIGH>;
+		clocks = <&cru ACLK_RGA>, <&cru HCLK_RGA>, <&cru SCLK_RGA_CORE>;
+		clock-names = "aclk_rga", "hclk_rga", "clk_rga";
+		power-domains = <&power PX30_PD_VO>;
+		status = "okay";
 	};
 };
 
