@@ -503,6 +503,27 @@ static int rockchip_pmu_restore_qos(struct rockchip_pm_domain *pd)
 	return 0;
 }
 
+/* Rockchip MPP: quiesce the bus around a reset of a device in the domain */
+int rockchip_pmu_idle_request(struct device *dev, bool idle)
+{
+	struct generic_pm_domain *genpd;
+	struct rockchip_pm_domain *pd;
+	int ret;
+
+	if (IS_ERR_OR_NULL(dev) || IS_ERR_OR_NULL(dev->pm_domain))
+		return -EINVAL;
+
+	genpd = pd_to_genpd(dev->pm_domain);
+	pd = to_rockchip_pd(genpd);
+
+	mutex_lock(&pd->pmu->mutex);
+	ret = rockchip_pmu_set_idle_request(pd, idle);
+	mutex_unlock(&pd->pmu->mutex);
+
+	return ret;
+}
+EXPORT_SYMBOL_GPL(rockchip_pmu_idle_request);
+
 static bool rockchip_pmu_domain_is_on(struct rockchip_pm_domain *pd)
 {
 	struct rockchip_pmu *pmu = pd->pmu;
@@ -701,6 +722,39 @@ out:
 
 	return ret;
 }
+
+/* Rockchip MPP: the PX30 VPU switch needs the domain on outside runtime PM */
+static struct rockchip_pm_domain *rockchip_pd_from_dev(struct device *dev)
+{
+	if (IS_ERR_OR_NULL(dev) || IS_ERR_OR_NULL(dev->pm_domain))
+		return NULL;
+
+	return to_rockchip_pd(pd_to_genpd(dev->pm_domain));
+}
+
+bool rockchip_pmu_pd_is_on(struct device *dev)
+{
+	struct rockchip_pm_domain *pd = rockchip_pd_from_dev(dev);
+
+	return pd ? rockchip_pmu_domain_is_on(pd) : false;
+}
+EXPORT_SYMBOL_GPL(rockchip_pmu_pd_is_on);
+
+int rockchip_pmu_pd_on(struct device *dev)
+{
+	struct rockchip_pm_domain *pd = rockchip_pd_from_dev(dev);
+
+	return pd ? rockchip_pd_power(pd, true) : -EINVAL;
+}
+EXPORT_SYMBOL_GPL(rockchip_pmu_pd_on);
+
+int rockchip_pmu_pd_off(struct device *dev)
+{
+	struct rockchip_pm_domain *pd = rockchip_pd_from_dev(dev);
+
+	return pd ? rockchip_pd_power(pd, false) : -EINVAL;
+}
+EXPORT_SYMBOL_GPL(rockchip_pmu_pd_off);
 
 static int rockchip_pd_regulator_disable(struct rockchip_pm_domain *pd)
 {
