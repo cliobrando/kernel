@@ -598,6 +598,9 @@ static int drm_set_client_name(struct drm_device *dev, void *data,
 
 static int drm_ioctl_permit(u32 flags, struct drm_file *file_priv)
 {
+	if (IS_ENABLED(CONFIG_DRM_IGNORE_IOCTL_PERMIT))
+		return 0;
+
 	/* ROOT_ONLY is only for CAP_SYS_ADMIN */
 	if (unlikely((flags & DRM_ROOT_ONLY) && !capable(CAP_SYS_ADMIN)))
 		return -EACCES;
