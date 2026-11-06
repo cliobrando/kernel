@@ -14,6 +14,16 @@ config ROCKCHIP_GRF
 	  In a lot of cases there also need to be default settings initialized
 	  to make some of them conform to expectations of the kernel.
 
+config ROCKCHIP_CPUINFO
+	tristate "Rockchip cpuinfo support"
+	depends on OF
+	default y if ARCH_ROCKCHIP
+	help
+	  Say y here to enable support for reading Rockchip cpu info, such as
+	  distinguishing SoC variants (e.g. PX30 vs PX30S) that share the same
+	  base compatible string but differ in silicon revision, detected via
+	  either an OTP-provisioned ID or a direct hardware register read.
+
 config ROCKCHIP_IODOMAIN
 	tristate "Rockchip IO domain support"
 	depends on OF
