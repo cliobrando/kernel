@@ -502,7 +502,11 @@ static int rk817_bat_get_prop(struct power_supply *ps,
 		val->intval = charger->battery_present;
 		break;
 	case POWER_SUPPLY_PROP_STATUS:
-		if (charger->cur_avg_ua < 0) {
+		/*
+		 * With the cord out the current can round to zero or above and
+		 * the charge state means nothing: don't fall through to it.
+		 */
+		if (!charger->plugged_in || charger->cur_avg_ua < 0) {
 			val->intval = POWER_SUPPLY_STATUS_DISCHARGING;
 			break;
 		}
@@ -524,9 +528,8 @@ static int rk817_bat_get_prop(struct power_supply *ps,
 			val->intval = POWER_SUPPLY_STATUS_FULL;
 			break;
 		default:
-			val->intval = POWER_SUPPLY_STATUS_UNKNOWN;
-			return -EINVAL;
-
+			val->intval = POWER_SUPPLY_STATUS_NOT_CHARGING;
+			break;
 		}
 		break;
 	case POWER_SUPPLY_PROP_CHARGE_TYPE:
@@ -947,6 +950,23 @@ rk817_read_or_set_full_charge_on_boot(struct rk817_charger *charger,
 					 boot_soc, table_soc, charger->soc);
 			else
 				charger->soc = boot_soc;
+
+			/*
+			 * Counter and saved soc can agree and both be wrong,
+			 * after another kernel kept the gauge. The terminal
+			 * voltage only sags under load, so the table is a safe
+			 * floor; on the charger, take off the most that the
+			 * charge current can add across the pack.
+			 */
+			table_soc = power_supply_batinfo_ocv2cap(bat_info,
+					bat_uv - (charger->plugged_in ? 300000 : 0),
+					20) * 1000;
+			if (charger->soc < table_soc - 10000) {
+				dev_info(charger->dev,
+					 "soc %d under the voltage floor, using %d\n",
+					 charger->soc, table_soc);
+				charger->soc = table_soc;
+			}
 		} else {
 			dev_info(charger->dev,
 				 "columb counter invalid, keeping saved soc\n");
