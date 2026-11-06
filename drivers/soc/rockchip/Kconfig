@@ -35,6 +35,13 @@ config ROCKCHIP_PM_CONFIG
 	  states to correctly arm wake sources. Built-in only (not a
 	  module) since it reads the kernel's own mem_sleep_current state.
 
+config ROCKCHIP_RK3326_PVTM
+	bool "RK3326 CPU quality grade report"
+	depends on CPUFREQ_DT && REGULATOR && MFD_SYSCON && THERMAL
+	help
+	  Measure the CPU's ring oscillator once at boot, as the Rockchip BSP
+	  does to pick voltages, and print the grade for EmulationStation.
+
 config ROCKCHIP_IODOMAIN
 	tristate "Rockchip IO domain support"
 	depends on OF
