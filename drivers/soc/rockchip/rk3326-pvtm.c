@@ -118,8 +118,10 @@ void rk3326_pvtm_report(struct device *cpu_dev)
 		return;
 
 	np = of_find_compatible_node(NULL, NULL, "rockchip,px30-pvtm");
-	if (!np)
+	if (!np) {
+		pr_warn("rk3326-pvtm: no pvtm node\n");
 		return;
+	}
 
 	grf = syscon_regmap_lookup_by_compatible("rockchip,px30-grf");
 	pclk = of_clk_get(np, 0);
@@ -128,20 +130,28 @@ void rk3326_pvtm_report(struct device *cpu_dev)
 		goto no_pvtm;
 
 	clk = clk_get(cpu_dev, NULL);
-	if (IS_ERR(clk))
+	if (IS_ERR(clk)) {
+		pr_warn("rk3326-pvtm: no CPU clock: %ld\n", PTR_ERR(clk));
 		goto put_pclk;
+	}
 	reg = regulator_get(cpu_dev, "cpu");
-	if (IS_ERR(reg))
+	if (IS_ERR(reg)) {
+		pr_warn("rk3326-pvtm: no CPU regulator: %ld\n", PTR_ERR(reg));
 		goto put_clk;
+	}
 
 	old_rate = clk_get_rate(clk);
 	old_uv = regulator_get_voltage(reg);
 
 	/* Frequency down first, and back up last */
-	if (clk_set_rate(clk, PVTM_CPU_HZ))
+	if (clk_set_rate(clk, PVTM_CPU_HZ)) {
+		pr_warn("rk3326-pvtm: can't set %d Hz\n", PVTM_CPU_HZ);
 		goto put_reg;
-	if (regulator_set_voltage(reg, PVTM_CPU_UV, PVTM_CPU_UV))
+	}
+	if (regulator_set_voltage(reg, PVTM_CPU_UV, PVTM_CPU_UV)) {
+		pr_warn("rk3326-pvtm: can't set %d uV\n", PVTM_CPU_UV);
 		goto restore_clk;
+	}
 
 	if (clk_prepare_enable(pclk))
 		goto restore_volt;
@@ -156,6 +166,9 @@ restore_volt:
 	regulator_set_voltage(reg, old_uv, INT_MAX);
 restore_clk:
 	clk_set_rate(clk, old_rate);
+
+	if (avg <= 0)
+		pr_warn("rk3326-pvtm: measurement failed: %d\n", avg);
 
 	if (avg > 0) {
 		value = avg + (temp / MILLIDEGREE_PER_DEGREE - PVTM_REF_TEMP) *
