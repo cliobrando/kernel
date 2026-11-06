@@ -333,6 +333,52 @@
 		clocks = <&cru SCLK_PVTM>;
 	};
 
+	/* The BSP's MPP nodes: ES decodes videos through /dev/mpp_service */
+	mpp_srv: mpp-srv {
+		compatible = "rockchip,mpp-service";
+		rockchip,taskqueue-count = <1>;
+		rockchip,resetgroup-count = <1>;
+		rockchip,grf = <&grf>;
+		rockchip,grf-offset = <0x0410>;
+		rockchip,grf-values = <0x80008000>, <0x80000000>, <0x80000000>;
+		rockchip,grf-names = "grf_rkvdec", "grf_vdpu2", "grf_vepu2";
+		status = "okay";
+	};
+
+	vdpu: vdpu@ff442400 {
+		compatible = "rockchip,vpu-decoder-px30";
+		reg = <0x0 0xff442400 0x0 0x400>;
+		interrupts = <GIC_SPI 79 IRQ_TYPE_LEVEL_HIGH>;
+		interrupt-names = "irq_dec";
+		clocks = <&cru ACLK_VPU>, <&cru HCLK_VPU>;
+		clock-names = "aclk_vcodec", "hclk_vcodec";
+		resets = <&cru SRST_VPU_A>, <&cru SRST_VPU_H>;
+		reset-names = "shared_video_a", "shared_video_h";
+		iommus = <&vpu_mmu>;
+		power-domains = <&power PX30_PD_VPU>;
+		rockchip,srv = <&mpp_srv>;
+		rockchip,taskqueue-node = <0>;
+		rockchip,resetgroup-node = <0>;
+		status = "okay";
+	};
+
+	vepu: vepu@ff442000 {
+		compatible = "rockchip,vpu-encoder-px30";
+		reg = <0x0 0xff442000 0x0 0x400>;
+		interrupts = <GIC_SPI 80 IRQ_TYPE_LEVEL_HIGH>;
+		interrupt-names = "irq_enc";
+		clocks = <&cru ACLK_VPU>, <&cru HCLK_VPU>;
+		clock-names = "aclk_vcodec", "hclk_vcodec";
+		resets = <&cru SRST_VPU_A>, <&cru SRST_VPU_H>;
+		reset-names = "shared_video_a", "shared_video_h";
+		iommus = <&vpu_mmu>;
+		power-domains = <&power PX30_PD_VPU>;
+		rockchip,srv = <&mpp_srv>;
+		rockchip,taskqueue-node = <0>;
+		rockchip,resetgroup-node = <0>;
+		status = "okay";
+	};
+
 	rk_rga: rk_rga@ff480000 {
 		compatible = "rockchip,rga2";
 		reg = <0x0 0xff480000 0x0 0x1000>;
@@ -801,8 +847,9 @@
 	status = "okay";
 };
 
+/* Mainline hantro node: this hardware belongs to the MPP nodes */
 &vpu {
-	status = "okay";
+	status = "disabled";
 };
 
 &vpu_mmu {
