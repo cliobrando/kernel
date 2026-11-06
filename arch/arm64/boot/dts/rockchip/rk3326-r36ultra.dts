@@ -312,6 +312,18 @@
 	};
 };
 
+/* Same region as the 6.1 tree: a crash log can be read back from either */
+&{/reserved-memory} {
+	ramoops: ramoops@110000 {
+		compatible = "ramoops";
+		reg = <0x0 0x110000 0x0 0xf0000>;
+		record-size = <0x20000>;
+		console-size = <0x80000>;
+		ftrace-size = <0x00000>;
+		pmsg-size = <0x50000>;
+	};
+};
+
 /* RGA2 for librga; mainline px30.dtsi has no node for it */
 &{/} {
 	rk_rga: rk_rga@ff480000 {
@@ -387,9 +399,9 @@
 		iovcc-supply = <&vcc_lcd>;
 		vdd-supply = <&vcc_lcd>;
 
-		/* flags: VIDEO | VIDEO_BURST | NO_EOT_PACKET | LPM */
+		/* flags: VIDEO | VIDEO_BURST | NO_EOT_PACKET | CLOCK_NON_CONTINUOUS | LPM */
 		panel_description =
-			"G size=153,85 delays=20,20,20,120,20 format=rgb888 lanes=4 flags=0xa03",
+			"G size=153,85 delays=20,20,20,120,20 format=rgb888 lanes=4 flags=0xe03",
 
 			/* 1080x764 at 50 MHz = 60.60 Hz, 1085x768 = 60.00 Hz */
 			"M clock=50000 horizontal=720,140,80,140 vertical=720,20,4,20 default=1",
@@ -432,9 +444,13 @@
 	status = "okay";
 };
 
+/*
+ * Off until tested: ROCKNIX's PX30 DMC driver is written for its own BL31,
+ * this board boots Rockchip's. DRAM stays at the rate U-Boot set.
+ */
 &dmc {
 	center-supply = <&vdd_logic>;
-	status = "okay";
+	status = "disabled";
 };
 
 &gpu {
