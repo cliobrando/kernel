@@ -45,6 +45,8 @@ source "drivers/gpu/nova-core/Kconfig"
 source "drivers/gpu/drm/Kconfig"
 
 menu "Frame buffer Devices"
+source "drivers/video/rockchip/rga3/Kconfig"
+
 source "drivers/video/fbdev/Kconfig"
 endmenu
 
