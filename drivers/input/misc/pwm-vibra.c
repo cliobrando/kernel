@@ -11,6 +11,7 @@
  *  Copyright (C) 2010, Lars-Peter Clausen <lars@metafoo.de>
  */
 
+#include <linux/delay.h>
 #include <linux/gpio/consumer.h>
 #include <linux/input.h>
 #include <linux/kernel.h>
@@ -20,6 +21,7 @@
 #include <linux/property.h>
 #include <linux/pwm.h>
 #include <linux/regulator/consumer.h>
+#include <linux/rockchip/cpu.h>
 #include <linux/slab.h>
 
 struct pwm_vibrator {
@@ -129,7 +131,7 @@ static int pwm_vibrator_probe(struct platform_device *pdev)
 {
 	struct pwm_vibrator *vibrator;
 	struct pwm_state state;
-	int err;
+	int err, i;
 
 	vibrator = devm_kzalloc(&pdev->dev, sizeof(*vibrator), GFP_KERNEL);
 	if (!vibrator)
@@ -157,9 +159,26 @@ static int pwm_vibrator_probe(struct platform_device *pdev)
 
 	INIT_WORK(&vibrator->play_work, pwm_vibrator_play_work);
 
-	/* Sync up PWM state and ensure it is off. */
 	pwm_init_state(vibrator->pwm, &state);
+
+	if (soc_is_px30s()) {
+		/* Stuck-on boot state (100% duty) needs a real duty change, not a plain disable */
+		state.enabled = true;
+		for (i = 0; i < 10; i++) {
+			state.duty_cycle = state.period * (9 - i) / 10;
+			err = pwm_apply_might_sleep(vibrator->pwm, &state);
+			if (err) {
+				dev_err(&pdev->dev,
+					"failed to kick pwm state: %d\n",
+					err);
+				return err;
+			}
+			msleep(25);
+		}
+	}
+
 	state.enabled = false;
+	state.duty_cycle = 0;
 	err = pwm_apply_might_sleep(vibrator->pwm, &state);
 	if (err) {
 		dev_err(&pdev->dev, "failed to apply initial PWM state: %d\n",
