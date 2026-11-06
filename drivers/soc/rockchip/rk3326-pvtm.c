@@ -72,6 +72,15 @@ static int pvtm_sample(struct regmap *grf)
 		udelay(4);
 	}
 
+	if (!val) {
+		unsigned int con, cal;
+
+		regmap_read(grf, PVTM_CON, &con);
+		regmap_read(grf, PVTM_CAL, &cal);
+		regmap_read(grf, PVTM_STA, &sta);
+		pr_warn("rk3326-pvtm: no result: con %#x cal %#x sta %#x\n", con, cal, sta);
+	}
+
 	regmap_write(grf, PVTM_CON, HIWORD(PVTM_START, 0));
 	regmap_write(grf, PVTM_CON, HIWORD(PVTM_EN, 0));
 
