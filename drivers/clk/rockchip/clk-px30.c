@@ -8,6 +8,7 @@
 #include <linux/io.h>
 #include <linux/of.h>
 #include <linux/of_address.h>
+#include <linux/rockchip/cpu.h>
 #include <linux/syscore_ops.h>
 #include <dt-bindings/clock/px30-cru.h>
 #include "clk.h"
@@ -145,6 +146,7 @@ PNAME(mux_npll_cpll_p)		= { "npll", "cpll" };
 PNAME(mux_gpll_cpll_p)		= { "gpll", "dummy_cpll" };
 PNAME(mux_gpll_npll_p)		= { "gpll", "npll" };
 PNAME(mux_gpll_xin24m_p)		= { "gpll", "xin24m"};
+PNAME(mux_xin24m_gpll_p)		= { "xin24m", "gpll"};
 PNAME(mux_gpll_cpll_npll_p)		= { "gpll", "dummy_cpll", "npll" };
 PNAME(mux_gpll_cpll_npll_xin24m_p)	= { "gpll", "dummy_cpll", "npll", "xin24m" };
 PNAME(mux_gpll_xin24m_npll_p)		= { "gpll", "xin24m", "npll"};
@@ -335,12 +337,6 @@ static struct rockchip_clk_branch px30_clk_branches[] __initdata = {
 			PX30_CLKGATE_CON(0), 13, GFLAGS),
 	COMPOSITE_NOGATE(SCLK_DDRCLK, "sclk_ddrc", mux_ddrphy_p, CLK_IGNORE_UNUSED,
 			PX30_CLKSEL_CON(2), 7, 1, MFLAGS, 0, 3, DFLAGS | CLK_DIVIDER_POWER_OF_TWO),
-	COMPOSITE_NOGATE(0, "clk_ddrphy4x", mux_ddrphy_p, CLK_IGNORE_UNUSED,
-			PX30_CLKSEL_CON(2), 7, 1, MFLAGS, 0, 3, DFLAGS),
-	FACTOR_GATE(0, "clk_ddrphy1x", "clk_ddrphy4x", CLK_IGNORE_UNUSED, 1, 4,
-			PX30_CLKGATE_CON(0), 14, GFLAGS),
-	FACTOR_GATE(0, "clk_stdby_2wrap", "clk_ddrphy4x", CLK_IGNORE_UNUSED, 1, 4,
-			PX30_CLKGATE_CON(1), 0, GFLAGS),
 	COMPOSITE_NODIV(0, "clk_ddrstdby", mux_ddrstdby_p, CLK_IGNORE_UNUSED,
 			PX30_CLKSEL_CON(2), 4, 1, MFLAGS,
 			PX30_CLKGATE_CON(1), 13, GFLAGS),
@@ -767,12 +763,6 @@ static struct rockchip_clk_branch px30_clk_branches[] __initdata = {
 	COMPOSITE_NOMUX(SCLK_SARADC, "clk_saradc", "xin24m", 0,
 			PX30_CLKSEL_CON(55), 0, 11, DFLAGS,
 			PX30_CLKGATE_CON(12), 10, GFLAGS),
-	COMPOSITE_NOMUX(SCLK_OTP, "clk_otp", "xin24m", 0,
-			PX30_CLKSEL_CON(56), 0, 3, DFLAGS,
-			PX30_CLKGATE_CON(12), 11, GFLAGS),
-	COMPOSITE_NOMUX(SCLK_OTP_USR, "clk_otp_usr", "clk_otp", 0,
-			PX30_CLKSEL_CON(56), 4, 2, DFLAGS,
-			PX30_CLKGATE_CON(13), 6, GFLAGS),
 
 	GATE(0, "clk_cpu_boost", "xin24m", CLK_IGNORE_UNUSED,
 			PX30_CLKGATE_CON(12), 12, GFLAGS),
@@ -999,6 +989,36 @@ static const char *const px30_cru_critical_clocks[] __initconst = {
 	"pclk_usb_grf",
 };
 
+static struct rockchip_clk_branch px30_clk_ddrphy_otp[] __initdata = {
+	COMPOSITE_NOGATE(0, "clk_ddrphy4x", mux_ddrphy_p, CLK_IGNORE_UNUSED,
+			PX30_CLKSEL_CON(2), 7, 1, MFLAGS, 0, 3, DFLAGS),
+	FACTOR_GATE(0, "clk_ddrphy1x", "clk_ddrphy4x", CLK_IGNORE_UNUSED, 1, 4,
+			PX30_CLKGATE_CON(0), 14, GFLAGS),
+	FACTOR_GATE(0, "clk_stdby_2wrap", "clk_ddrphy4x",
+			CLK_IGNORE_UNUSED, 1, 4,
+			PX30_CLKGATE_CON(1), 0, GFLAGS),
+
+	COMPOSITE_NOMUX(SCLK_OTP, "clk_otp", "xin24m", 0,
+			PX30_CLKSEL_CON(56), 0, 3, DFLAGS,
+			PX30_CLKGATE_CON(12), 11, GFLAGS),
+	COMPOSITE_NOMUX(SCLK_OTP_USR, "clk_otp_usr", "clk_otp", 0,
+			PX30_CLKSEL_CON(56), 4, 2, DFLAGS,
+			PX30_CLKGATE_CON(13), 6, GFLAGS),
+};
+
+static struct rockchip_clk_branch px30s_clk_ddrphy_otp[] __initdata = {
+	COMPOSITE(0, "clk_ddrphy1x", mux_ddrphy_p, CLK_IGNORE_UNUSED,
+			PX30_CLKSEL_CON(2), 7, 1, MFLAGS, 0, 3, DFLAGS,
+			PX30_CLKGATE_CON(0), 14, GFLAGS),
+	FACTOR_GATE(0, "clk_stdby_2wrap", "clk_ddrphy1x",
+			CLK_IGNORE_UNUSED, 1, 4,
+			PX30_CLKGATE_CON(1), 0, GFLAGS),
+
+	COMPOSITE(SCLK_OTP_USR, "clk_otp_usr", mux_xin24m_gpll_p, 0,
+			PX30_CLKSEL_CON(56), 8, 1, MFLAGS, 0, 8, DFLAGS,
+			PX30_CLKGATE_CON(12), 11, GFLAGS),
+};
+
 static void __init px30_clk_init(struct device_node *np)
 {
 	struct rockchip_clk_provider *ctx;
@@ -1025,6 +1045,14 @@ static void __init px30_clk_init(struct device_node *np)
 				   PX30_GRF_SOC_STATUS0);
 	rockchip_clk_register_branches(ctx, px30_clk_branches,
 				       ARRAY_SIZE(px30_clk_branches));
+
+	rockchip_soc_id_init();
+	if (soc_is_px30s())
+		rockchip_clk_register_branches(ctx, px30s_clk_ddrphy_otp,
+					       ARRAY_SIZE(px30s_clk_ddrphy_otp));
+	else
+		rockchip_clk_register_branches(ctx, px30_clk_ddrphy_otp,
+					       ARRAY_SIZE(px30_clk_ddrphy_otp));
 
 	rockchip_clk_register_armclk(ctx, ARMCLK, "armclk",
 				     mux_armclk_p, ARRAY_SIZE(mux_armclk_p),
