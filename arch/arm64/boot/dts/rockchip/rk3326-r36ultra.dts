@@ -264,7 +264,8 @@
 		simple-audio-card,format = "i2s";
 		simple-audio-card,name = "rk817_int";
 		simple-audio-card,mclk-fs = <256>;
-		simple-audio-card,hp-det-gpios = <&gpio2 RK_PC6 GPIO_ACTIVE_LOW>;
+		/* reads low with no plug, against the pull-up */
+		simple-audio-card,hp-det-gpios = <&gpio2 RK_PC6 GPIO_ACTIVE_HIGH>;
 		simple-audio-card,widgets =
 			"Microphone", "Mic Jack",
 			"Headphone", "Headphones",
