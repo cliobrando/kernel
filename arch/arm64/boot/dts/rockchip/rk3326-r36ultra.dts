@@ -399,6 +399,32 @@
 	};
 };
 
+/*
+ * rk3326.dtsi leaves only 560 MHz. Bring back the lower points, with the
+ * voltages of px30.dtsi, so light games can run the GPU slower.
+ */
+&gpu_opp_table {
+	opp-200000000 {
+		opp-hz = /bits/ 64 <200000000>;
+		opp-microvolt = <950000>;
+	};
+
+	opp-300000000 {
+		opp-hz = /bits/ 64 <300000000>;
+		opp-microvolt = <975000>;
+	};
+
+	opp-400000000 {
+		opp-hz = /bits/ 64 <400000000>;
+		opp-microvolt = <1050000>;
+	};
+
+	opp-480000000 {
+		opp-hz = /bits/ 64 <480000000>;
+		opp-microvolt = <1125000>;
+	};
+};
+
 /* Stock clock, as on 6.1: rk3326.dtsi adds a 1416 MHz turbo point */
 &cpu0_opp_table {
 	/delete-node/ opp-1416000000;
