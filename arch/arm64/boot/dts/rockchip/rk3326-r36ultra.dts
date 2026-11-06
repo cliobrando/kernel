@@ -506,13 +506,13 @@
 	status = "okay";
 };
 
-/*
- * Off until tested: ROCKNIX's PX30 DMC driver is written for its own BL31,
- * this board boots Rockchip's. DRAM stays at the rate U-Boot set.
- */
+&dfi {
+	status = "okay";
+};
+
 &dmc {
 	center-supply = <&vdd_logic>;
-	status = "disabled";
+	status = "okay";
 };
 
 &gpu {
