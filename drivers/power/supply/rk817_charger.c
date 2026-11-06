@@ -854,8 +854,8 @@ rk817_read_or_set_full_charge_on_boot(struct rk817_charger *charger,
 {
 	struct rk808 *rk808 = charger->rk808;
 	u32 boot_charge_mah;
-	int ret, reg, tmp;
-	bool first_boot;
+	int ret, reg, tmp, off_cnt, bat_uv, boot_soc, table_soc;
+	bool first_boot, keep_saved;
 	u8 bulk_reg[4];
 
 	/*
@@ -912,18 +912,41 @@ rk817_read_or_set_full_charge_on_boot(struct rk817_charger *charger,
 		regmap_bulk_read(rk808->regmap, RK817_GAS_GAUGE_Q_PRES_H3,
 				 bulk_reg, 4);
 		tmp = get_unaligned_be32(bulk_reg);
+		regmap_read(rk808->regmap, RK817_GAS_GAUGE_OFF_CNT, &off_cnt);
+		bat_uv = rk817_bat_voltage_uv(charger, RK817_GAS_GAUGE_BAT_VOL_H);
 		dev_info(charger->dev,
-			 "boot: counter %d uAh, saved soc %d, fcc %d mAh, battery %d uV\n",
+			 "boot: counter %d uAh, saved soc %d, fcc %d mAh, battery %d uV, off_cnt %d\n",
 			 tmp > 0 ? ADC_TO_CHARGE_UAH(tmp, charger->res_div) : 0,
-			 charger->soc, charger->fcc_mah,
-			 rk817_bat_voltage_uv(charger, RK817_GAS_GAUGE_BAT_VOL_H));
+			 charger->soc, charger->fcc_mah, bat_uv, off_cnt);
 		if (tmp > 0) {
 			boot_charge_mah = ADC_TO_CHARGE_UAH(tmp,
 							    charger->res_div) / 1000;
 			if (boot_charge_mah > charger->fcc_mah)
 				boot_charge_mah = charger->fcc_mah;
-			charger->soc = boot_charge_mah * 100000 /
-				       charger->fcc_mah;
+			boot_soc = boot_charge_mah * 100000 / charger->fcc_mah;
+
+			/*
+			 * The gauge re-derives this count from its own ocv
+			 * model while the pack rests, so bound it with the ocv
+			 * table: under load the terminal voltage sits below the
+			 * open circuit voltage, making the table a floor, and
+			 * under charge above it, making it a ceiling on any
+			 * saved soc that would displace the counter.
+			 */
+			table_soc = power_supply_batinfo_ocv2cap(bat_info, bat_uv,
+								 20) * 1000;
+			if (charger->plugged_in)
+				keep_saved = boot_soc < charger->soc - 10000 &&
+					     charger->soc <= table_soc + 10000;
+			else
+				keep_saved = boot_soc < table_soc - 10000;
+
+			if (keep_saved)
+				dev_info(charger->dev,
+					 "counter %d, voltage allows %d, keeping saved soc %d\n",
+					 boot_soc, table_soc, charger->soc);
+			else
+				charger->soc = boot_soc;
 		} else {
 			dev_info(charger->dev,
 				 "columb counter invalid, keeping saved soc\n");
