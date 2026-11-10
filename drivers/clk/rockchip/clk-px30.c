@@ -1019,6 +1019,48 @@ static struct rockchip_clk_branch px30s_clk_ddrphy_otp[] __initdata = {
 			PX30_CLKGATE_CON(12), 11, GFLAGS),
 };
 
+static void __iomem *px30_cru_base;
+
+/* PX30_MODE_CON and PX30_CLKSEL_CON(0) are reset across suspend/resume on this SoC */
+static const int px30_saved_cru_reg_ids[] = {
+	PX30_MODE_CON,
+	PX30_CLKSEL_CON(0),
+};
+
+static u32 px30_saved_cru_regs[ARRAY_SIZE(px30_saved_cru_reg_ids)];
+
+static int px30_clk_suspend(void *data)
+{
+	int i, reg_id;
+
+	for (i = 0; i < ARRAY_SIZE(px30_saved_cru_reg_ids); i++) {
+		reg_id = px30_saved_cru_reg_ids[i];
+		px30_saved_cru_regs[i] = readl_relaxed(px30_cru_base + reg_id);
+	}
+
+	return 0;
+}
+
+static void px30_clk_resume(void *data)
+{
+	int i, reg_id;
+
+	for (i = ARRAY_SIZE(px30_saved_cru_reg_ids) - 1; i >= 0; i--) {
+		reg_id = px30_saved_cru_reg_ids[i];
+		writel_relaxed(px30_saved_cru_regs[i] | 0xffff0000,
+			       px30_cru_base + reg_id);
+	}
+}
+
+static const struct syscore_ops px30_clk_syscore_ops = {
+	.suspend = px30_clk_suspend,
+	.resume = px30_clk_resume,
+};
+
+static struct syscore px30_clk_syscore = {
+	.ops = &px30_clk_syscore_ops,
+};
+
 static void __init px30_clk_init(struct device_node *np)
 {
 	struct rockchip_clk_provider *ctx;
@@ -1030,6 +1072,7 @@ static void __init px30_clk_init(struct device_node *np)
 		pr_err("%s: could not map cru region\n", __func__);
 		return;
 	}
+	px30_cru_base = reg_base;
 
 	clk_nr_clks = rockchip_clk_find_max_clk_id(px30_clk_branches,
 						   ARRAY_SIZE(px30_clk_branches)) + 1;
@@ -1066,6 +1109,8 @@ static void __init px30_clk_init(struct device_node *np)
 				  ROCKCHIP_SOFTRST_HIWORD_MASK);
 
 	rockchip_register_restart_notifier(ctx, PX30_GLB_SRST_FST, NULL);
+
+	register_syscore(&px30_clk_syscore);
 
 	rockchip_clk_of_add_provider(np, ctx);
 }
