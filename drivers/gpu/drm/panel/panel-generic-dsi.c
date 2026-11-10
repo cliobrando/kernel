@@ -623,10 +623,10 @@ static int generic_panel_commit_mode(struct drm_connector *connector,
     struct drm_modeset_acquire_ctx actx;
     struct drm_connector_state *conn_state;
     struct drm_crtc_state *crtc_state;
-    struct drm_atomic_state *state;
+    struct drm_atomic_commit *state;
     int ret;
 
-    state = drm_atomic_state_alloc(drm);
+    state = drm_atomic_commit_alloc(drm);
     if (!state)
         return -ENOMEM;
 
@@ -658,11 +658,11 @@ retry:
         ret = drm_atomic_commit(state);
 out:
     if (ret == -EDEADLK) {
-        drm_atomic_state_clear(state);
+        drm_atomic_commit_clear(state);
         drm_modeset_backoff(&actx);
         goto retry;
     }
-    drm_atomic_state_put(state);
+    drm_atomic_commit_put(state);
     drm_modeset_drop_locks(&actx);
     drm_modeset_acquire_fini(&actx);
 
