@@ -399,9 +399,55 @@
 	};
 };
 
-/* Stock clock, as on 6.1: rk3326.dtsi adds a 1416 MHz turbo point */
+/*
+ * Stock clock, as on 6.1: rk3326.dtsi adds a 1416 MHz turbo point and drops
+ * 600, 816 and 1200 MHz. Bring those back with px30.dtsi's voltages, so idle
+ * and the menus can run slower and the CPU MAX FREQ menu has every step.
+ */
 &cpu0_opp_table {
 	/delete-node/ opp-1416000000;
+
+	opp-600000000 {
+		opp-hz = /bits/ 64 <600000000>;
+		opp-microvolt = <950000 950000 1350000>;
+		clock-latency-ns = <40000>;
+		opp-suspend;
+	};
+	opp-816000000 {
+		opp-hz = /bits/ 64 <816000000>;
+		opp-microvolt = <1050000 1050000 1350000>;
+		clock-latency-ns = <40000>;
+	};
+	opp-1200000000 {
+		opp-hz = /bits/ 64 <1200000000>;
+		opp-microvolt = <1300000 1300000 1350000>;
+		clock-latency-ns = <40000>;
+	};
+};
+
+/*
+ * rk3326.dtsi leaves only 560 MHz. Bring back the lower points with
+ * px30.dtsi's voltages for the GPU MAX FREQ menu. perfmax keeps games on the
+ * performance governor on 7.x, so they still run at the menu's maximum:
+ * simple_ondemand in games cost about a fifth of the frame rate here.
+ */
+&gpu_opp_table {
+	opp-200000000 {
+		opp-hz = /bits/ 64 <200000000>;
+		opp-microvolt = <950000>;
+	};
+	opp-300000000 {
+		opp-hz = /bits/ 64 <300000000>;
+		opp-microvolt = <975000>;
+	};
+	opp-400000000 {
+		opp-hz = /bits/ 64 <400000000>;
+		opp-microvolt = <1050000>;
+	};
+	opp-480000000 {
+		opp-hz = /bits/ 64 <480000000>;
+		opp-microvolt = <1125000>;
+	};
 };
 
 &cpu0 {
