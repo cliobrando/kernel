@@ -822,6 +822,9 @@
 };
 
 &tsadc {
+	/* The defaults it used before, stated: reset through the CRU, active low */
+	rockchip,hw-tshut-mode = <0>;
+	rockchip,hw-tshut-polarity = <0>;
 	status = "okay";
 };
 
