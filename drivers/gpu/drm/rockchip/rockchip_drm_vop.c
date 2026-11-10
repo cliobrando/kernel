@@ -1864,6 +1864,13 @@ static void vop_plane_add_properties(struct drm_plane *plane,
 	if (flags)
 		drm_plane_create_rotation_property(plane, DRM_MODE_ROTATE_0,
 						   DRM_MODE_ROTATE_0 | flags);
+
+	/*
+	 * The only blending vop_plane_atomic_update() does: per-pixel alpha,
+	 * pre-multiplied, on the overlay windows. Win0 skips it, which gives
+	 * the same result over the opaque black background.
+	 */
+	drm_plane_create_blend_mode_property(plane, BIT(DRM_MODE_BLEND_PREMULTI));
 }
 
 static int vop_create_crtc(struct vop *vop)
