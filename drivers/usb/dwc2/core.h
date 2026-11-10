@@ -876,6 +876,7 @@ struct dwc2_hregs_backup {
  * @reset_phy_on_wake:	Quirk saying that we should assert PHY reset on a
  *			remote wakeup.
  * @phy_off_for_suspend: Status of whether we turned the PHY off at suspend.
+ * @core_reset_failed:	Set when the last core soft reset timed out.
  * @need_phy_for_wake:	Quirk saying that we should keep the PHY on at
  *			suspend if we need USB to wake us up.
  * @frame_number:       Frame number read from the core. For both device
@@ -1074,6 +1075,7 @@ struct dwc2_hsotg {
 	unsigned int reset_phy_on_wake:1;
 	unsigned int need_phy_for_wake:1;
 	unsigned int phy_off_for_suspend:1;
+	unsigned int core_reset_failed:1;
 	u16 frame_number;
 
 	struct phy *phy;

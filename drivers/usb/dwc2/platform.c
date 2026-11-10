@@ -655,6 +655,9 @@ static int __maybe_unused dwc2_suspend(struct device *dev)
 	if (!dwc2->ll_hw_enabled)
 		return 0;
 
+	if (dwc2->core_reset_failed)
+		return 0;
+
 	is_device_mode = dwc2_is_device_mode(dwc2);
 	if (is_device_mode)
 		dwc2_hsotg_suspend(dwc2);
@@ -733,6 +736,9 @@ static int __maybe_unused dwc2_resume(struct device *dev)
 	int ret = 0;
 
 	if (!dwc2->ll_hw_enabled)
+		return 0;
+
+	if (dwc2->core_reset_failed)
 		return 0;
 
 	if (dwc2->phy_off_for_suspend && dwc2->ll_hw_enabled) {
