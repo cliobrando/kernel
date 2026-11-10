@@ -748,7 +748,7 @@ static int rk817_bat_prop_writeable(struct power_supply *psy,
 }
 
 static const struct power_supply_desc rk817_bat_desc = {
-	.name = "rk817-battery",
+	.name = "battery",
 	.type = POWER_SUPPLY_TYPE_BATTERY,
 	.properties = rk817_bat_props,
 	.property_is_writeable	= rk817_bat_prop_writeable,
