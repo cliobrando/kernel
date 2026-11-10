@@ -1,0 +1,2 @@
+# SPDX-License-Identifier: GPL-2.0
+source "drivers/net/wireless/rockchip_wlan/rk915/Kconfig"
