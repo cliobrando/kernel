@@ -2797,15 +2797,20 @@ static int __init input_init(void)
 	if (err)
 		goto fail1;
 
+	err = input_poller_wq_init();
+	if (err)
+		goto fail2;
+
 	err = register_chrdev_region(MKDEV(INPUT_MAJOR, 0),
 				     INPUT_MAX_CHAR_DEVICES, "input");
 	if (err) {
 		pr_err("unable to register char major %d", INPUT_MAJOR);
-		goto fail2;
+		goto fail3;
 	}
 
 	return 0;
 
+ fail3:	input_poller_wq_exit();
  fail2:	input_proc_exit();
  fail1:	class_unregister(&input_class);
 	return err;
@@ -2813,6 +2818,7 @@ static int __init input_init(void)
 
 static void __exit input_exit(void)
 {
+	input_poller_wq_exit();
 	input_proc_exit();
 	unregister_chrdev_region(MKDEV(INPUT_MAJOR, 0),
 				 INPUT_MAX_CHAR_DEVICES);
