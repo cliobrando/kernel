@@ -18,100 +18,47 @@
 	};
 
 	chosen {
-		stdout-path = "serial2:115200n8";
+		stdout-path = "serial2:1500000n8";
 	};
 
 	backlight: backlight {
 		compatible = "pwm-backlight";
 		power-supply = <&vcc_bl>;
 		pwms = <&pwm1 0 25000 0>;
-	};
-
-	builtin_gamepad: gpio-keys {
-		compatible = "gpio-keys";
-		pinctrl-names = "default";
-		pinctrl-0 = <&btn_pins>;
-
-		button-sw1 {
-			gpios = <&gpio1 RK_PB4 GPIO_ACTIVE_LOW>;
-			label = "DPAD-UP";
-			linux,code = <BTN_DPAD_UP>;
-		};
-		button-sw2 {
-			gpios = <&gpio1 RK_PB5 GPIO_ACTIVE_LOW>;
-			label = "DPAD-DOWN";
-			linux,code = <BTN_DPAD_DOWN>;
-		};
-		button-sw3 {
-			gpios = <&gpio1 RK_PB6 GPIO_ACTIVE_LOW>;
-			label = "DPAD-LEFT";
-			linux,code = <BTN_DPAD_LEFT>;
-		};
-		button-sw4 {
-			gpios = <&gpio1 RK_PB7 GPIO_ACTIVE_LOW>;
-			label = "DPAD-RIGHT";
-			linux,code = <BTN_DPAD_RIGHT>;
-		};
-		button-sw5 {
-			gpios = <&gpio1 RK_PA2 GPIO_ACTIVE_LOW>;
-			label = "BTN-A";
-			linux,code = <BTN_EAST>;
-		};
-		button-sw6 {
-			gpios = <&gpio1 RK_PA5 GPIO_ACTIVE_LOW>;
-			label = "BTN-B";
-			linux,code = <BTN_SOUTH>;
-		};
-		button-sw7 {
-			gpios = <&gpio1 RK_PA6 GPIO_ACTIVE_LOW>;
-			label = "BTN-Y";
-			linux,code = <BTN_WEST>;
-		};
-		button-sw8 {
-			gpios = <&gpio1 RK_PA7 GPIO_ACTIVE_LOW>;
-			label = "BTN-X";
-			linux,code = <BTN_NORTH>;
-		};
-		btn_f1: button-sw9 {
-			gpios = <&gpio2 RK_PA0 GPIO_ACTIVE_LOW>;
-			label = "F1";
-			linux,code = <BTN_TRIGGER_HAPPY1>;
-		};
-		btn_f2: button-sw10 {
-			gpios = <&gpio2 RK_PA1 GPIO_ACTIVE_LOW>;
-			label = "F2";
-			linux,code = <BTN_TRIGGER_HAPPY2>;
-		};
-		btn_f3: button-sw11 {
-			gpios = <&gpio2 RK_PA2 GPIO_ACTIVE_LOW>;
-			label = "F3";
-			linux,code = <BTN_TRIGGER_HAPPY3>;
-		};
-		btn_f4: button-sw12 {
-			gpios = <&gpio2 RK_PA3 GPIO_ACTIVE_LOW>;
-			label = "F4";
-			linux,code = <BTN_TRIGGER_HAPPY4>;
-		};
-		btn_f5: button-sw13 {
-			gpios = <&gpio2 RK_PA4 GPIO_ACTIVE_LOW>;
-			label = "F5";
-			linux,code = <BTN_TRIGGER_HAPPY5>;
-		};
-		btn_f6: button-sw14 {
-			gpios = <&gpio2 RK_PA5 GPIO_ACTIVE_LOW>;
-			label = "F6";
-			linux,code = <BTN_TRIGGER_HAPPY6>;
-		};
-		button-sw15 {
-			gpios = <&gpio2 RK_PA6 GPIO_ACTIVE_LOW>;
-			label = "TOP-LEFT";
-			linux,code = <BTN_TL>;
-		};
-		button-sw16 {
-			gpios = <&gpio2 RK_PA7 GPIO_ACTIVE_LOW>;
-			label = "TOP-RIGHT";
-			linux,code = <BTN_TR>;
-		};
+		brightness-levels = <
+		  0   1   2   3   4   5   6   7
+		  8   9  10  11  12  13  14  15
+		 16  17  18  19  20  21  22  23
+		 24  25  26  27  28  29  30  31
+		 32  33  34  35  36  37  38  39
+		 40  41  42  43  44  45  46  47
+		 48  49  50  51  52  53  54  55
+		 56  57  58  59  60  61  62  63
+		 64  65  66  67  68  69  70  71
+		 72  73  74  75  76  77  78  79
+		 80  81  82  83  84  85  86  87
+		 88  89  90  91  92  93  94  95
+		 96  97  98  99 100 101 102 103
+		104 105 106 107 108 109 110 111
+		112 113 114 115 116 117 118 119
+		120 121 122 123 124 125 126 127
+		128 129 130 131 132 133 134 135
+		136 137 138 139 140 141 142 143
+		144 145 146 147 148 149 150 151
+		152 153 154 155 156 157 158 159
+		160 161 162 163 164 165 166 167
+		168 169 170 171 172 173 174 175
+		176 177 178 179 180 181 182 183
+		184 185 186 187 188 189 190 191
+		192 193 194 195 196 197 198 199
+		200 201 202 203 204 205 206 207
+		208 209 210 211 212 213 214 215
+		216 217 218 219 220 221 222 223
+		224 225 226 227 228 229 230 231
+		232 233 234 235 236 237 238 239
+		240 241 242 243 244 245 246 247
+		248 249 250 251 252 253 254 255>;
+		default-brightness-level = <128>;
 	};
 
 	/* led-1 is wired directly to output of always-on regulator */
@@ -238,7 +185,6 @@
 		reg = <0>;
 		backlight = <&backlight>;
 		reset-gpios = <&gpio3 RK_PC0 GPIO_ACTIVE_LOW>;
-		rotation = <270>;
 
 		port {
 			mipi_in_panel: endpoint {
@@ -273,6 +219,7 @@
 		clocks = <&cru SCLK_I2S1_OUT>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&pmic_int>, <&i2s1_2ch_mclk>;
+		rockchip,system-power-controller;
 		wakeup-source;
 		#clock-cells = <1>;
 		#sound-dai-cells = <0>;
