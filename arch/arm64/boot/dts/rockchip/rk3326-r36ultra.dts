@@ -426,27 +426,20 @@
 };
 
 /*
- * rk3326.dtsi leaves only 560 MHz. Bring back the lower points with
- * px30.dtsi's voltages for the GPU MAX FREQ menu. perfmax keeps games on the
- * performance governor on 7.x, so they still run at the menu's maximum:
- * simple_ondemand in games cost about a fifth of the frame rate here.
+ * One GPU point, 520 MHz at 1.15 V: the R36 Ultra's top speed on the vendor
+ * kernels (dArkOS4Clone's max_gpufreq=520, the BSP table's 520 MHz at 1.15 V).
+ * Keep it a single point, as rk3326.dtsi does with 560 MHz: with px30.dtsi's
+ * lower points back, vdd_logic swings between 0.95 and 1.15 V, and a game
+ * that starts loading the GPU right after it jumps to its top point hung the
+ * board without a trace (Quake 2 timedemo: 6 hangs in 7 runs at 520 or 560
+ * MHz, none in 3 runs with this single point).
  */
 &gpu_opp_table {
-	opp-200000000 {
-		opp-hz = /bits/ 64 <200000000>;
-		opp-microvolt = <950000>;
-	};
-	opp-300000000 {
-		opp-hz = /bits/ 64 <300000000>;
-		opp-microvolt = <975000>;
-	};
-	opp-400000000 {
-		opp-hz = /bits/ 64 <400000000>;
-		opp-microvolt = <1050000>;
-	};
-	opp-480000000 {
-		opp-hz = /bits/ 64 <480000000>;
-		opp-microvolt = <1125000>;
+	/delete-node/ opp-560000000;
+
+	opp-520000000 {
+		opp-hz = /bits/ 64 <520000000>;
+		opp-microvolt = <1150000>;
 	};
 };
 
