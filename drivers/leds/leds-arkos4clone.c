@@ -1648,7 +1648,7 @@ static ssize_t mode_store(struct device *dev,
 	/* 复制并去除换行符 */
 	if (count >= sizeof(mode_str))
 		return -EINVAL;
-	strncpy(mode_str, buf, count);
+	memcpy(mode_str, buf, count);
 	mode_str[count] = '\0';
 	if (mode_str[count - 1] == '\n')
 		mode_str[count - 1] = '\0';
