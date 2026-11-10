@@ -1079,7 +1079,7 @@ static long rga_ioctl(struct file *file, uint32_t cmd, unsigned long arg)
 		driver_version.major = DRIVER_MAJOR_VERSION;
 		driver_version.minor = DRIVER_MINOR_VERSION;
 		driver_version.revision = DRIVER_REVISION_VERSION;
-		strncpy((char *)driver_version.str, DRIVER_VERSION, sizeof(driver_version.str));
+		strscpy_pad((char *)driver_version.str, DRIVER_VERSION, sizeof(driver_version.str));
 
 		if (copy_to_user((void *)arg, &driver_version, sizeof(driver_version)))
 			ret = -EFAULT;
