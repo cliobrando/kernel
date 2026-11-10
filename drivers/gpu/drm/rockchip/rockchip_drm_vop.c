@@ -866,6 +866,12 @@ static int vop_plane_atomic_check(struct drm_plane *plane,
 			return -EINVAL;
 		}
 
+		if (vop->data->afbc->pic_vir_width.mask &&
+		    !IS_ALIGNED(fb->width, 16)) {
+			DRM_DEBUG_KMS("AFBC width %u is not 16 aligned\n", fb->width);
+			return -EINVAL;
+		}
+
 		ret = vop_convert_afbc_format(fb->format->format);
 		if (ret < 0)
 			return ret;
@@ -988,7 +994,15 @@ static void vop_plane_atomic_update(struct drm_plane *plane,
 		VOP_AFBC_SET(vop, hreg_block_split, 0);
 		VOP_AFBC_SET(vop, win_sel, VOP_WIN_TO_INDEX(vop_win));
 		VOP_AFBC_SET(vop, hdr_ptr, dma_addr);
-		VOP_AFBC_SET(vop, pic_size, act_info);
+		if (vop->data->afbc->pic_vir_width.mask) {
+			VOP_AFBC_SET(vop, pic_vir_width, fb->width);
+			VOP_AFBC_SET(vop, pic_offset, 0);
+			VOP_AFBC_SET(vop, pic_size,
+				     (ALIGN(actual_h, 16) - 1) << 16 |
+				     (ALIGN(actual_w, 16) - 1));
+		} else {
+			VOP_AFBC_SET(vop, pic_size, act_info);
+		}
 	}
 
 	VOP_WIN_SET(vop, win, format, format);

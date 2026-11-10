@@ -99,6 +99,11 @@ static const uint64_t format_modifiers_win_lite[] = {
 	DRM_FORMAT_MOD_INVALID,
 };
 
+static const uint64_t format_modifiers_afbc[] = {
+	ROCKCHIP_AFBC_MOD,
+	DRM_FORMAT_MOD_INVALID,
+};
+
 static const struct vop_scl_regs rk3036_win0_scl = {
 	.scale_yrgb_x = VOP_REG(RK3036_WIN0_SCL_FACTOR_YRGB, 0xffff, 0x0),
 	.scale_yrgb_y = VOP_REG(RK3036_WIN0_SCL_FACTOR_YRGB, 0xffff, 16),
@@ -337,6 +342,23 @@ static const struct vop_win_phy px30_win1_data = {
 	.alpha_en = VOP_REG(PX30_WIN1_ALPHA_CTRL, 0x1, 0),
 };
 
+static const struct vop_win_phy px30_win1_afbc_data = {
+	.data_formats = formats_win_lite,
+	.nformats = ARRAY_SIZE(formats_win_lite),
+	.format_modifiers = format_modifiers_afbc,
+	.enable = VOP_REG(PX30_WIN1_CTRL0, 0x1, 0),
+	.format = VOP_REG(PX30_WIN1_CTRL0, 0x7, 4),
+	.rb_swap = VOP_REG(PX30_WIN1_CTRL0, 0x1, 12),
+	.uv_swap = VOP_REG(PX30_WIN1_CTRL0, 0x1, 15),
+	.dsp_info = VOP_REG(PX30_WIN1_DSP_INFO, 0xffffffff, 0),
+	.dsp_st = VOP_REG(PX30_WIN1_DSP_ST, 0xffffffff, 0),
+	.yrgb_mst = VOP_REG(PX30_WIN1_MST, 0xffffffff, 0),
+	.yrgb_vir = VOP_REG(PX30_WIN1_VIR, 0x1fff, 0),
+	.alpha_pre_mul = VOP_REG(PX30_WIN1_ALPHA_CTRL, 0x1, 2),
+	.alpha_mode = VOP_REG(PX30_WIN1_ALPHA_CTRL, 0x1, 1),
+	.alpha_en = VOP_REG(PX30_WIN1_ALPHA_CTRL, 0x1, 0),
+};
+
 static const struct vop_win_phy px30_win2_data = {
 	.data_formats = formats_win_lite,
 	.nformats = ARRAY_SIZE(formats_win_lite),
@@ -357,10 +379,19 @@ static const struct vop_win_phy px30_win2_data = {
 static const struct vop_win_data px30_vop_big_win_data[] = {
 	{ .base = 0x00, .phy = &px30_win0_data,
 	  .type = DRM_PLANE_TYPE_PRIMARY },
-	{ .base = 0x00, .phy = &px30_win1_data,
+	{ .base = 0x00, .phy = &px30_win1_afbc_data,
 	  .type = DRM_PLANE_TYPE_OVERLAY },
 	{ .base = 0x00, .phy = &px30_win2_data,
 	  .type = DRM_PLANE_TYPE_CURSOR },
+};
+
+static const struct vop_afbc px30_vop_afbc = {
+	.enable = VOP_REG(PX30_AFBCD0_CTRL, 0x1, 0),
+	.format = VOP_REG(PX30_AFBCD0_CTRL, 0x1f, 4),
+	.pic_vir_width = VOP_REG(PX30_AFBCD0_CTRL, 0xffff, 16),
+	.pic_offset = VOP_REG(PX30_AFBCD0_PIC_OFFSET, 0xffffffff, 0),
+	.pic_size = VOP_REG(PX30_AFBCD0_PIC_SIZE, 0xffffffff, 0),
+	.hdr_ptr = VOP_REG(PX30_AFBCD0_HDR_PTR, 0xffffffff, 0),
 };
 
 static const struct vop_data px30_vop_big = {
@@ -370,6 +401,7 @@ static const struct vop_data px30_vop_big = {
 	.common = &px30_common,
 	.modeset = &px30_modeset,
 	.output = &px30_output,
+	.afbc = &px30_vop_afbc,
 	.win = px30_vop_big_win_data,
 	.win_size = ARRAY_SIZE(px30_vop_big_win_data),
 	.max_output = { 1920, 1080 },
