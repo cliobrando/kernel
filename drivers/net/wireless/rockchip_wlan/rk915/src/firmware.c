@@ -197,7 +197,11 @@ static int rk915_read_firmware_file(struct firmware_info *fw_info, char *name, u
 	}
 
 	if (!find) {
-		RPU_ERROR_FIRMWARE("%s: failed to open %s\n", __func__, name);
+		/* The RF calibration and parameter files are optional */
+		if (!strcmp(name, RF_CAL_DATA_FILE) || !strcmp(name, RF_PARA_DATA_FILE))
+			RPU_INFO_FIRMWARE("%s not present, using the defaults\n", name);
+		else
+			RPU_ERROR_FIRMWARE("%s: failed to open %s\n", __func__, name);
 		return -1;
 	}
 
