@@ -1417,12 +1417,13 @@ static int mmc_sd_init_card(struct mmc_host *host, u32 ocr,
 	u32 cid[4];
 	u32 rocr = 0;
 	bool v18_fixup_failed = false;
+	bool resume_retried = false;
 
 	WARN_ON(!host->claimed);
 retry:
 	err = mmc_sd_get_cid(host, ocr, cid, &rocr);
 	if (err)
-		return err;
+		goto resume_retry;
 
 	if (oldcard) {
 		if (memcmp(cid, oldcard->raw_cid, sizeof(cid)) != 0) {
@@ -1598,6 +1599,14 @@ cont:
 free_card:
 	if (!oldcard)
 		mmc_remove_card(card);
+resume_retry:
+	if (oldcard && mmc_card_suspended(oldcard) && !resume_retried) {
+		resume_retried = true;
+		pr_warn("%s: resume failed (%d), retrying after a power cycle\n",
+			mmc_hostname(host), err);
+		mmc_power_cycle(host, ocr);
+		goto retry;
+	}
 
 	return err;
 }
