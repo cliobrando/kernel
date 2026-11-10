@@ -192,7 +192,7 @@ int px30_workaround_combo_init(struct mpp_dev *mpp)
 			iommu->dte_addr = mpp_iommu_get_dte_addr(iommu);
 			rockchip_iommu_disable(mpp->dev);
 		}
-		dev_err(mpp->dev, "%s dte_addr %08x\n", __func__, iommu->dte_addr);
+		dev_info(mpp->dev, "%s dte_addr %08x\n", __func__, iommu->dte_addr);
 		if (mpp->hw_ops->clk_off)
 			mpp->hw_ops->clk_off(mpp);
 		INIT_LIST_HEAD(&iommu->link);
