@@ -140,6 +140,18 @@ config ARM_MEDIATEK_CCI_DEVFREQ
 	  buck voltages and update a proper CCI frequency. Use the notification
 	  to get the regulator status.
 
+config ARM_PX30_DMC_DEVFREQ
+	tristate "ARM PX30 DMC DEVFREQ Driver"
+	depends on (ARCH_ROCKCHIP && HAVE_ARM_SMCCC) || \
+		(COMPILE_TEST && HAVE_ARM_SMCCC)
+	select DEVFREQ_EVENT_ROCKCHIP_DFI
+	select DEVFREQ_GOV_SIMPLE_ONDEMAND
+	select PM_DEVFREQ_EVENT
+	select PM_OPP
+	help
+	  This adds the DEVFREQ driver for the PX30/RK3326 DMC (Dynamic Memory
+	  Controller). The DDR rate is changed by Rockchip's BL31 firmware.
+
 config ARM_RK3399_DMC_DEVFREQ
 	tristate "ARM RK3399 DMC DEVFREQ Driver"
 	depends on (ARCH_ROCKCHIP && HAVE_ARM_SMCCC) || \

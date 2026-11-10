@@ -808,6 +808,7 @@ static int rk3588_dfi_init(struct rockchip_dfi *dfi)
 };
 
 static const struct of_device_id rockchip_dfi_id_match[] = {
+	{ .compatible = "rockchip,px30-dfi", .data = rk3568_dfi_init },
 	{ .compatible = "rockchip,rk3399-dfi", .data = rk3399_dfi_init },
 	{ .compatible = "rockchip,rk3568-dfi", .data = rk3568_dfi_init },
 	{ .compatible = "rockchip,rk3588-dfi", .data = rk3588_dfi_init },
