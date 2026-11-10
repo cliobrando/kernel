@@ -24,6 +24,28 @@ struct input_dev_poller {
 	struct delayed_work work;
 };
 
+/*
+ * Polled devices run on an unbound queue. The delayed work's timer is a
+ * global timer that fires on a busy CPU, so on a per-CPU queue the poll work
+ * lands on whatever CPU is busiest and preempts it every poll; a joypad that
+ * samples its sticks a thousand times a second takes ~10% from a game's
+ * emulation thread. Unbound workers run on an idle CPU instead. Freezable,
+ * as system_freezable_wq was, so polling stops during suspend.
+ */
+static struct workqueue_struct *input_poller_wq;
+
+int input_poller_wq_init(void)
+{
+	input_poller_wq = alloc_workqueue("input_poll",
+					  WQ_UNBOUND | WQ_FREEZABLE, 0);
+	return input_poller_wq ? 0 : -ENOMEM;
+}
+
+void input_poller_wq_exit(void)
+{
+	destroy_workqueue(input_poller_wq);
+}
+
 static void input_dev_poller_queue_work(struct input_dev_poller *poller)
 {
 	unsigned long delay;
@@ -32,7 +54,7 @@ static void input_dev_poller_queue_work(struct input_dev_poller *poller)
 	if (delay >= HZ)
 		delay = round_jiffies_relative(delay);
 
-	queue_delayed_work(system_freezable_wq, &poller->work, delay);
+	queue_delayed_work(input_poller_wq, &poller->work, delay);
 }
 
 static void input_dev_poller_work(struct work_struct *work)

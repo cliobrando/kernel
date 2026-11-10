@@ -15,4 +15,7 @@ void input_dev_poller_stop(struct input_dev_poller *poller);
 
 extern struct attribute_group input_poller_attribute_group;
 
+int input_poller_wq_init(void);
+void input_poller_wq_exit(void);
+
 #endif /* _INPUT_POLLER_H */
