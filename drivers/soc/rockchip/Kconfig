@@ -24,6 +24,17 @@ config ROCKCHIP_CPUINFO
 	  base compatible string but differ in silicon revision, detected via
 	  either an OTP-provisioned ID or a direct hardware register read.
 
+config ROCKCHIP_PM_CONFIG
+	bool "Rockchip PX30S suspend wakeup configuration support"
+	depends on OF && HAVE_ARM_SMCCC
+	default y if ARCH_ROCKCHIP
+	help
+	  Say y here to forward this board's sleep-mode/wakeup-source
+	  configuration to BL31 firmware via SIP calls on every suspend
+	  attempt, required for PX30S's firmware-controlled deep suspend
+	  states to correctly arm wake sources. Built-in only (not a
+	  module) since it reads the kernel's own mem_sleep_current state.
+
 config ROCKCHIP_IODOMAIN
 	tristate "Rockchip IO domain support"
 	depends on OF
