@@ -2489,7 +2489,7 @@ int rpu_init(void)
 	priv->txpower = DEFAULT_TX_POWER;
 	priv->tx_antenna = DEFAULT_TX_ANT_SELECT;
 	priv->rts_threshold = DEFAULT_RTS_THRESHOLD;
-	strncpy(priv->name, RPU_DRIVER_NAME, 11);
+	strscpy(priv->name, RPU_DRIVER_NAME, 12);
 	priv->name[11] = '\0';
 
 	for (i = 0; i < wifi->params.num_vifs; i++)
