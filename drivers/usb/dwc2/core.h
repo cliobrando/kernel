@@ -1507,6 +1507,7 @@ int dwc2_hcd_get_frame_number(struct dwc2_hsotg *hsotg);
 int dwc2_hcd_get_future_frame_number(struct dwc2_hsotg *hsotg, int us);
 void dwc2_hcd_connect(struct dwc2_hsotg *hsotg);
 void dwc2_hcd_disconnect(struct dwc2_hsotg *hsotg, bool force);
+void dwc2_hcd_vbus_supply_exit(struct dwc2_hsotg *hsotg);
 void dwc2_hcd_start(struct dwc2_hsotg *hsotg);
 int dwc2_core_init(struct dwc2_hsotg *hsotg, bool initial_setup);
 int dwc2_port_suspend(struct dwc2_hsotg *hsotg, u16 windex);
@@ -1534,6 +1535,7 @@ static inline int dwc2_hcd_get_future_frame_number(struct dwc2_hsotg *hsotg,
 { return 0; }
 static inline void dwc2_hcd_connect(struct dwc2_hsotg *hsotg) {}
 static inline void dwc2_hcd_disconnect(struct dwc2_hsotg *hsotg, bool force) {}
+static inline void dwc2_hcd_vbus_supply_exit(struct dwc2_hsotg *hsotg) {}
 static inline void dwc2_hcd_start(struct dwc2_hsotg *hsotg) {}
 static inline void dwc2_hcd_remove(struct dwc2_hsotg *hsotg) {}
 static inline int dwc2_core_init(struct dwc2_hsotg *hsotg, bool initial_setup)
